@@ -1,0 +1,86 @@
+This is a list of commands that can be sent to the serial
+port of the Arduino for group 13.
+Scott Postlethwaite s1231893
+*Subject to lots of change*
+
+Commands that can be read by the arduino are strings with
+the command first followed by arguments after spaces, and
+terminated with a newline/carridge return character.
+e.g.
+"MOVE 50 -100\n"
+
+/////////////////////////////////////////////////////////
+Test Commands
+/////////////////////////////////////////////////////////
+
+1. "ON"
+Turns the LED on the board on.
+
+2. "OFF"
+Turns the LED off.
+
+
+/////////////////////////////////////////////////////////
+Movement Commands
+/////////////////////////////////////////////////////////
+
+1. "MOVE <leftpower> <rightpower>"
+Sets the left and right motors to move at powers 
+<leftpower> and <rightpower>. If either of these is 0,
+the corresponding motor will stop.
+This function only changes the values on the motor if 
+the new motor power is different from the motor power
+currently running on the motor.
+
+2. "FSTOP"
+Stops all motors.
+
+3. "KICK <time> <power>"
+Runs the kicker motor forward for <time> milliseconds at 
+<power>%.
+*Script with delays, may ignore commands sent while this
+is executing*
+
+4. "CATCHUP"
+Lifts the catcher to a cathing position and holds it 
+there. *may drain batteries too fast*
+
+5. "CATCHDOWN"
+Stops the catcher from lifting to drop down on the ball.
+
+6. "FSTOP"
+Force stop. Stops all motors from moving.
+
+7. "SROTL <time> <power>"
+Short rotate left, rotates the robot left for <time> at 
+<power> for small course corrections.
+*Script with delays, may ignore commands sent while this
+is executing*
+
+7. "SROTR <time> <power>"
+Short rotate left, rotates the robot right for <time> at 
+<power> for small course corrections.
+*Script with delays, may ignore commands sent while this
+is executing*
+
+
+/////////////////////////////////////////////////////////
+Remote Control Commands (for robot wars)
+/////////////////////////////////////////////////////////
+
+1. "RCFORWARD"
+Will run both motors forward at 100% power until the
+stop command is sent.
+
+2. "RCBACKWARD"
+Will run both motors backwards at 100% power until the
+stop command is sent.
+
+3. "RCROTATL" (No command size > 8)
+Rotates the robot left at 100% power until a stop
+command is sent.
+
+4. "RCROTATR" (No command size > 8)
+Rotates the robot right at 100% power until a stop
+command is sent.
+
