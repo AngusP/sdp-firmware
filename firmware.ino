@@ -1,24 +1,31 @@
-//Robot Controller for SDP 13
-//Authours: Vanya Petkova and Scott Postlethwaite
-//January 2015
+/**
+   
+   FIRMWARE
 
-//Extra comments version!
+   Based on SDP 2015 Group 13 code
+
+**/
 
 #include "SerialCommand.h"
 #include "SDPArduino.h"
 #include <Wire.h>
 
 #define arduinoLED 13                        // Arduino LED on board
-#define left 5                               // Left wheel motor
-#define right 4                              // Right wheel motor
+#define leftm 5                              // Left wheel motor
+#define rightm 4                             // Right wheel motor
 #define catcher 2                            // Catcher motor
 #define kicker 3                             // Kicker motor
 #define minpower 30                          // Minimum Speed of the motors in power%
 #define default_power 50                     // If no power argument is given, this is the default
 
+#define motor_direction -1                   // Motors are backwards. Go figure.
+
 #define sensorAddr 0x39  // Sensor physical address on the power board - 0x39
 #define ch0        0x43  // Read ADC for channel 0 - 0x43
 #define ch1        0x83  // Read ADC for channel 1 - 0x83
+
+#define ROTARY_SLAVE_ADDRESS 5
+#define ROTARY_COUNT 2
 
 SerialCommand sCmd;                          // The SerialCommand object
 
@@ -45,182 +52,234 @@ int kicking = 0;
 long kick_interval;
 int kick_state = 0;
 
+// Rotary encoders
+int positions[ROTARY_COUNT] = {0};
+
+
+struct motor {
+    int port, encoder, power, direction;
+    float correction;
+};
+
+struct motor left;
+struct motor right;
+
 void setup() {
-  pinMode(arduinoLED, OUTPUT);               // Configure the onboard LED for output
-  digitalWrite(arduinoLED, LOW);             // default to LED off
+    pinMode(arduinoLED, OUTPUT);               // Configure the onboard LED for output
+    digitalWrite(arduinoLED, LOW);             // default to LED off
 
-  SDPsetup();
+    SDPsetup();
 
-  Serial.begin(115200);
+    Serial.begin(115200);
 
-  // Setup callbacks for SerialCommand commands
-  //Test commands
-  sCmd.addCommand("ON",    LED_on);          // Turns LED on
-  sCmd.addCommand("OFF",   LED_off);         // Turns LED off
+    // Setup callbacks for SerialCommand commands
+    //Test commands
+    sCmd.addCommand("ON",    LED_on);          // Turns LED on
+    sCmd.addCommand("OFF",   LED_off);         // Turns LED off
 
     //Movement commands
-  sCmd.addCommand("MOVE", run_engine);       // Runs wheel motors
-  sCmd.addCommand("FSTOP", force_stop);      // Force stops all motors
-  sCmd.addCommand("KICK", kick);        // Runs kick script
-  sCmd.addCommand("CATCHUP", move_catchup);      // Runs catch script
-  sCmd.addCommand("CATCHDOWN", move_catchdown);      // Runs catch script
+    sCmd.addCommand("MOVE", run_engine);       // Runs wheel motors
+    sCmd.addCommand("FSTOP", force_stop);      // Force stops all motors
+    sCmd.addCommand("KICK", kick);        // Runs kick script
+    sCmd.addCommand("CATCHUP", move_catchup);      // Runs catch script
+    sCmd.addCommand("CATCHDOWN", move_catchdown);      // Runs catch script
 
-  sCmd.addCommand("HAVEBALL", have_ball);    //Checks if we have the ball
-  sCmd.addCommand("RESETHB", reset_have_ball); //Resets the intial value of the inital light sensor value
+    sCmd.addCommand("HAVEBALL", have_ball);    //Checks if we have the ball
+    sCmd.addCommand("RESETHB", reset_have_ball); //Resets the intial value of the inital light sensor value
   
-  sCmd.addCommand("SROTL", move_shortrotL);
-  sCmd.addCommand("SROTR", move_shortrotR);
+    sCmd.addCommand("SROTL", move_shortrotL);
+    sCmd.addCommand("SROTR", move_shortrotR);
 
-  //Remote Control Commands
-  sCmd.addCommand("RCFORWARD", rc_forward);
-  sCmd.addCommand("RCBACKWARD", rc_backward);
-  sCmd.addCommand("RCROTATL", rc_rotateL);
-  sCmd.addCommand("RCROTATR", rc_rotateR);
+    //Remote Control Commands
+    sCmd.addCommand("RCFORWARD", rc_forward);
+    sCmd.addCommand("RCBACKWARD", rc_backward);
+    sCmd.addCommand("RCROTATL", rc_rotateL);
+    sCmd.addCommand("RCROTATR", rc_rotateR);
 
-  sCmd.setDefaultHandler(unrecognized);      // Handler for command that isn't matched
+    // Read from rotary encoders
+    sCmd.addCommand("GETE", getenc);
+
+    sCmd.setDefaultHandler(unrecognized);      // Handler for command that isn't matched
 
     Serial.println("I am completely operational, and all my circuits are functioning perfectly.");
+
+    // Set up motors
+    left.port = 5;
+    left.encoder = 0;
+    left.direction = -1;
+    left.power = 0;
+    left.correction = 0.0;
+
+    right.port = 4;
+    right.encoder = 1;
+    right.direction = -1;
+    right.power = 0;
+    right.correction = 0.0;
 }
 
 void loop() { 
-  /* The program will enter the loop and first use the switch statement to check which
-   function was set to be running last.
-   */
+    /* The program will enter the loop and first use the switch statement to check which
+       function was set to be running last.
+    */
 
-  switch(function_running) {
-    //Non script function
-  case 0:
-    break;
+    switch(function_running) {
+        //Non script function
+    case 0:
+        break;
 
-    //Left/Right short rotate and brake function are stopped after interval
-  case 1:
-    if (millis() > function_run_time + interval) {
-      leftStop();
-      rightStop();
-      function_running = 0;
+        //Left/Right short rotate and brake function are stopped after interval
+    case 1:
+        if (millis() > function_run_time + interval) {
+            leftStop();
+            rightStop();
+            function_running = 0;
+        }
+        break;
+    case 2:
+        if (millis() > function_run_time + interval) {
+            leftStop();
+            rightStop();
+            function_running = 0;
+        }
+        break;
+
+    default :
+        Serial.println("I shouldn't be here");
     }
-    break;
-  case 2:
-    if (millis() > function_run_time + interval) {
-      leftStop();
-      rightStop();
-      function_running = 0;
-    }
-    break;
 
-  default :
-    Serial.println("I shouldn't be here");
-  }
+    sCmd.readSerial();                         // Processes serial commands
 
-  sCmd.readSerial();                         // Processes serial commands
-
-  if(kicking) {
-   if(millis() > kick_interval) {
-    switch(kick_state) {
-      case(0):
-       move_kick();
-       kick_state = 1;
-       kick_interval = kick_interval + 250;
-       break;
-      case(1):
-       move_kick();
-       kick_state = 2;
-       kick_interval = kick_interval + 300;
-       break;
-      case(2):
-       move_kick();
-       kick_state = 3;
-       kick_interval = kick_interval + 400;
-       break;
-      case(3):
-       move_kick();
-       kick_state = 0;
-       break;
+    if(kicking) {
+        if(millis() > kick_interval) {
+            switch(kick_state) {
+            case(0):
+                move_kick();
+                kick_state = 1;
+                kick_interval = kick_interval + 250;
+                break;
+            case(1):
+                move_kick();
+                kick_state = 2;
+                kick_interval = kick_interval + 300;
+                break;
+            case(2):
+                move_kick();
+                kick_state = 3;
+                kick_interval = kick_interval + 400;
+                break;
+            case(3):
+                move_kick();
+                kick_state = 0;
+                break;
+            }
+        }
     }
-    }
-  }
   
-  //Makes the sensor code run once per second. Change the int for different values
-  if(millis() > time_since_last_run + 15) {
-    switch(sensor_state) {
-      case(0):
-       readI2C(sensorAddr, ch0);
-       sensor_state = 1;
-       time_since_last_run = time_since_last_run + 15 ;
-       break;
-      case(1):
-       readI2C(sensorAddr, ch0);
-       sensor_state = 2;
-       time_since_last_run = time_since_last_run + 15;
-       break;
-      case(2):
-       //Serial.print("Channel 0 : ");
-       readI2C(sensorAddr, ch0);
-       sensor_state = 0;
-       time_since_last_run = millis();
-       break;
+    //Makes the sensor code run once per second. Change the int for different values
+    if(millis() > time_since_last_run + 15) {
+        switch(sensor_state) {
+        case(0):
+            readI2C(sensorAddr, ch0);
+            sensor_state = 1;
+            time_since_last_run = time_since_last_run + 15 ;
+            break;
+        case(1):
+            readI2C(sensorAddr, ch0);
+            sensor_state = 2;
+            time_since_last_run = time_since_last_run + 15;
+            break;
+        case(2):
+            //Serial.print("Channel 0 : ");
+            readI2C(sensorAddr, ch0);
+            sensor_state = 0;
+            time_since_last_run = millis();
+            break;
+        }
     }
-  }
 
+}
+
+void updateMotorPositions() {
+  // Request motor position deltas from rotary slave board
+  Wire.requestFrom(ROTARY_SLAVE_ADDRESS, ROTARY_COUNT);
+  
+  // Update the recorded motor positions
+  for (int i = 0; i < ROTARY_COUNT; i++) {
+    positions[i] = (int8_t) Wire.read();  // Must cast to signed 8-bit type
+  }
+}
+
+void printMotorPositions() {
+  Serial.print("Encoders: ");
+  for (int i = 0; i < ROTARY_COUNT; i++) {
+    Serial.print(positions[i]);
+    Serial.print(' ');
+  }
+  Serial.println();
+}
+
+void getenc(){
+    updateMotorPositions();
+    printMotorPositions();
 }
 
 //Read data from light sensor method
 void readI2C(int portAddress, int channelAddr){
   
   
-  switch(sensor_state) {
+    switch(sensor_state) {
     case (0):
-      Wire.beginTransmission(portAddress); 
-      Wire.write(byte(0x18)); // Write command to assert extended range mode - 0x1D
-      //delay(40);              // Write command to reset or return to standard range mode - 0x18
-      break;
+        Wire.beginTransmission(portAddress); 
+        Wire.write(byte(0x18)); // Write command to assert extended range mode - 0x1D
+        //delay(40);              // Write command to reset or return to standard range mode - 0x18
+        break;
     case(1):
-      Wire.write(byte(0x03)); // Power-up state/Read command register
-      Wire.endTransmission(); // stop transmitting 
-      //delay(70);
-      break;
+        Wire.write(byte(0x03)); // Power-up state/Read command register
+        Wire.endTransmission(); // stop transmitting 
+        //delay(70);
+        break;
     case(2):
-      Wire.beginTransmission(portAddress);             
-      Wire.write(byte(channelAddr)); // Read ADC channel 0 - 0x43 || Read ADC channel 1 - 0x83
-      Wire.endTransmission();        // stop transmitting
+        Wire.beginTransmission(portAddress);             
+        Wire.write(byte(channelAddr)); // Read ADC channel 0 - 0x43 || Read ADC channel 1 - 0x83
+        Wire.endTransmission();        // stop transmitting
       
-      Wire.requestFrom(portAddress, 1);
-      int byte_in;
+        Wire.requestFrom(portAddress, 1);
+        int byte_in;
       
-      while(Wire.available())    // slave may send less than requested
-      { 
-        byte_in = Wire.read();    // receive a byte as character
-        Serial.println(byte_in);         // print the character
+        while(Wire.available())    // slave may send less than requested
+        { 
+            byte_in = Wire.read();    // receive a byte as character
+            Serial.println(byte_in);         // print the character
         
-        if(initial_has_been_set != true) {
-          initial_light_value = byte_in;
-          initial_has_been_set = true;
+            if(initial_has_been_set != true) {
+                initial_light_value = byte_in;
+                initial_has_been_set = true;
+            }
+        
+            do_we_have_ball = (byte_in - initial_light_value) > 30;
         }
-        
-        do_we_have_ball = (byte_in - initial_light_value) > 30;
-      }
-      break;
-  }
+        break;
+    }
   
 }
 
 void have_ball() {
-  Serial.println(do_we_have_ball);
+    Serial.println(do_we_have_ball);
 }
 
 void reset_have_ball() {
- initial_has_been_set = false; 
+    initial_has_been_set = false; 
 }
 
 // Test Commands
 void LED_on() {
-  Serial.println("LED on");
-  digitalWrite(arduinoLED, HIGH);
+    Serial.println("LED on");
+    digitalWrite(arduinoLED, HIGH);
 }
 
 void LED_off() {
-  Serial.println("LED off");
-  digitalWrite(arduinoLED, LOW);
+    Serial.println("LED off");
+    digitalWrite(arduinoLED, LOW);
 }
 
 
@@ -228,73 +287,76 @@ void LED_off() {
 // Movement with argument commands
 void run_engine() {
 
-  //This is how arguments are tokenised with SerialCommand. Extra can be added
-  //by repeating this.
-  char *arg1;
-  char *arg2;
+    //This is how arguments are tokenised with SerialCommand. Extra can be added
+    //by repeating this.
+    char *arg1;
+    char *arg2;
 
-  arg1 = sCmd.next();
-  int new_left_power = atoi(arg1);
+    arg1 = sCmd.next();
+    int new_left_power = atoi(arg1);
 
-  arg2 = sCmd.next();
-  int new_right_power = atoi(arg2);
+    arg2 = sCmd.next();
+    int new_right_power = atoi(arg2);
 
-  Serial.print("Moving ");
-  Serial.print(new_left_power);
-  Serial.print(" ");
-  Serial.println(new_right_power);
+    Serial.print("Moving ");
+    Serial.print(new_left_power);
+    Serial.print(" ");
+    Serial.println(new_right_power);
+
+    // Compensate for wrong direction
+    new_left_power *= motor_direction;
+    new_right_power *= motor_direction;
 
 
-
-  //Stops the motors when the signal given is 0 0
-  if(new_left_power == 0 && new_right_power == 0){
-    if(!stop_flag) {
-      brake_motors();
-      stop_flag = 1;
+    //Stops the motors when the signal given is 0 0
+    if(new_left_power == 0 && new_right_power == 0){
+        if(!stop_flag) {
+            brake_motors();
+            stop_flag = 1;
+        }
+    } else {
+        stop_flag = 0;
     }
-  } else {
-    stop_flag = 0;
-  }
     
-  function_running = 0;
+    function_running = 0;
     
 
 
-  //Checks if the given speed is less than the minimum speed. If it is, 
-  //it sets the given power to the minimum power. Left motor.
-  if ((new_left_power != 0) && (abs(new_left_power) < minpower)) {
-    new_left_power = minpower * (new_left_power/abs(new_left_power)); // ooooh
-  }
-
-  if ((new_right_power != 0) && (abs(new_right_power) < minpower)) {
-    new_right_power = minpower  * (new_right_power/abs(new_right_power));
-  }
-
-  // Updates speed of right wheel motor only if a different power is given.
-  if(new_right_power != right_power){
-    right_power = new_right_power;
-    Serial.print("Changing right power to ");
-    Serial.println(right_power);
-    if(right_power < 0){
-      motorBackward(right, abs(right_power));
-    } 
-    else {
-      motorForward(right, right_power);
+    //Checks if the given speed is less than the minimum speed. If it is, 
+    //it sets the given power to the minimum power. Left motor.
+    if ((new_left_power != 0) && (abs(new_left_power) < minpower)) {
+        new_left_power = minpower * (new_left_power/abs(new_left_power)); // ooooh
     }
-  }
 
-  // Updates speed of left wheel motor only if a different power is given.
-  if(new_left_power != left_power){
-    left_power = new_left_power;
-    Serial.print("Changing left power to ");
-    Serial.println(left_power);
-    if(left_power < 0){
-      motorBackward(left, abs(left_power));
-    } 
-    else {
-      motorForward(left, left_power);
+    if ((new_right_power != 0) && (abs(new_right_power) < minpower)) {
+        new_right_power = minpower  * (new_right_power/abs(new_right_power));
     }
-  }
+
+    // Updates speed of right wheel motor only if a different power is given.
+    if(new_right_power != right_power){
+        right_power = new_right_power;
+        Serial.print("Changing right power to ");
+        Serial.println(right_power);
+        if(right_power < 0){
+            motorBackward(rightm, abs(right_power));
+        } 
+        else {
+            motorForward(rightm, right_power);
+        }
+    }
+
+    // Updates speed of left wheel motor only if a different power is given.
+    if(new_left_power != left_power){
+        left_power = new_left_power;
+        Serial.print("Changing left power to ");
+        Serial.println(left_power);
+        if(left_power < 0){
+            motorBackward(leftm, abs(left_power));
+        } 
+        else {
+            motorForward(leftm, left_power);
+        }
+    }
 
 }
 
@@ -302,43 +364,43 @@ void run_engine() {
 // Kick script
 
 void kick() {
-  kicking = 1;
+    kicking = 1;
 }
 
 void move_kick() {
 
-  switch(kick_state) {
+    switch(kick_state) {
     case(0):
-      function_running = 0; // Set as a non scripted function. Is still blocking currently, may be changed
+        function_running = 0; // Set as a non scripted function. Is still blocking currently, may be changed
       
-      kick_interval = millis();
+        kick_interval = millis();
 
-      leftStop();
-      rightStop();
+        leftStop();
+        rightStop();
 
-      Serial.println("Kicking");
+        Serial.println("Kicking");
 
-      motorBackward(catcher, 100);
-      break;
-      //delay(300);
+        motorBackward(catcher, 100);
+        break;
+        //delay(300);
     case(1):
-      motorForward(kicker, 100);
-      motorForward(left, 70);
-      motorForward(right, 70);
+        motorForward(kicker, 100);
+        motorForward(leftm, 70);
+        motorForward(rightm, 70);
 
-      break;
-      //delay(time);
+        break;
+        //delay(time);
     case(2):
-      motorBackward(kicker, 100);
-      motorBackward(catcher, 100);
-      brake_motors();
-      break;
+        motorBackward(kicker, 100);
+        motorBackward(catcher, 100);
+        brake_motors();
+        break;
     case(3):
-      motorStop(kicker);
-      motorStop(catcher);
-      kicking = 0;
-      break;
-  }
+        motorStop(kicker);
+        motorStop(catcher);
+        kicking = 0;
+        break;
+    }
 
 }
 
@@ -347,9 +409,9 @@ void move_kick() {
 void move_catchup() {
 
 
-  Serial.println("Catcher on");
-  //lift and move forward
-  motorBackward(catcher, 100);
+    Serial.println("Catcher on");
+    //lift and move forward
+    motorBackward(catcher, 100);
 
 }
 
@@ -357,102 +419,102 @@ void move_catchup() {
 void move_catchdown() {
 
 
-  Serial.println("Catcher off");
-  //lift and move forward
-  motorStop(catcher);
+    Serial.println("Catcher off");
+    //lift and move forward
+    motorStop(catcher);
 
 }
 
 // Function to stop left motor, also sets the speed to 0
 // (These are used so I don't have to copy and paste this code everywhere)
 void leftStop() {
-  left_power = 0;
-  motorStop(left);
+    left_power = 0;
+    motorStop(leftm);
 }
 
 // Function to stop right motor, also sets the speed to 0
 void rightStop() {
-  right_power = 0;
-  motorStop(right);
+    right_power = 0;
+    motorStop(rightm);
 }
 
 // Force stops all motors
 void force_stop(){
-  Serial.println("Force stopping");
-  left_power = 0;
-  right_power = 0;
-  motorAllStop(); 
+    Serial.println("Force stopping");
+    left_power = 0;
+    right_power = 0;
+    motorAllStop(); 
 }
 
 //Script to rotate the robot quickly to the left for a specified time.
 void move_shortrotL() {
 
-  if(function_running != 1) {
-    char *arg1;
-    char *arg2;
+    if(function_running != 1) {
+        char *arg1;
+        char *arg2;
 
-    arg1 = sCmd.next();
-    arg2 = sCmd.next();
+        arg1 = sCmd.next();
+        arg2 = sCmd.next();
 
-    if (arg1 != NULL) {
-      interval = atoi(arg1);
-    } 
-    else
-    {
-      interval = 250;
+        if (arg1 != NULL) {
+            interval = atoi(arg1);
+        } 
+        else
+        {
+            interval = 250;
+        }
+
+        if (arg2 != NULL) {
+            srot_power = atoi(arg2);
+        }
+        else
+        {
+            srot_power = default_power;
+        }
+
+        motorForward(rightm, srot_power);
+        motorBackward(leftm, srot_power);
+        stop_flag = 0;
+
+        function_running = 1;
+        function_run_time = millis();
     }
-
-    if (arg2 != NULL) {
-      srot_power = atoi(arg2);
-    }
-    else
-    {
-      srot_power = default_power;
-    }
-
-    motorForward(right, srot_power);
-    motorBackward(left, srot_power);
-    stop_flag = 0;
-
-    function_running = 1;
-    function_run_time = millis();
-  }
 }
 
 //Script to rotate the robot quickly to the right for a specified time.
 void move_shortrotR() {
 
-  if(function_running != 2) {
-    char *arg1;
-    char *arg2;
+    if(function_running != 2) {
+        char *arg1;
+        char *arg2;
 
-    arg1 = sCmd.next();
-    arg2 = sCmd.next();
+        arg1 = sCmd.next();
+        arg2 = sCmd.next();
 
-    if (arg1 != NULL) {
-      interval = atoi(arg1);
-    } 
-    else
-    {
-      //Left motor slightly weaker forwards, compensated here
-      interval = 300;
+        if (arg1 != NULL) {
+            interval = atoi(arg1);
+        } 
+        else
+        {
+            //Left motor slightly weaker forwards, compensated here
+            interval = 300;
+        }
+
+        if (arg2 != NULL) {
+            srot_power = atoi(arg2);
+        }
+        else
+        {
+            srot_power = default_power;
+        }
+
+        motorForward(leftm, srot_power);
+        motorBackward(rightm, srot_power);
+        stop_flag = 0;
+
+        function_running = 2;
+        function_run_time = millis();
     }
-
-    if (arg2 != NULL) {
-      srot_power = atoi(arg2);
-    }
-    else
-    {
-      srot_power = default_power;
-    }
-
-    motorForward(left, srot_power);
-    motorBackward(right, srot_power);
-    stop_flag = 0;
-
-    function_running = 2;
-    function_run_time = millis();
-  }
 
 }
 
@@ -460,45 +522,45 @@ void move_shortrotR() {
 //Remote Control Commands
 void rc_forward() {
 
-  Serial.println("Moving forward");
-  motorForward(4, 100);
-  motorForward(5, 100);
+    Serial.println("Moving forward");
+    motorForward(4, 100);
+    motorForward(5, 100);
 
 }
 
 void rc_backward() {
 
-  Serial.println("Moving backward");
-  motorBackward(4, 100);
-  motorBackward(5, 100);
+    Serial.println("Moving backward");
+    motorBackward(4, 100);
+    motorBackward(5, 100);
 
 }
 
 void rc_rotateL() {
-  Serial.println("Rotating Left");
-  motorForward(4, 100);
-  motorBackward(5, 100);
+    Serial.println("Rotating Left");
+    motorForward(4, 100);
+    motorBackward(5, 100);
 }
 
 void rc_rotateR() {
-  Serial.println("Rotating Right");
-  motorForward(5, 100);
-  motorBackward(4, 100);
+    Serial.println("Rotating Right");
+    motorForward(5, 100);
+    motorBackward(4, 100);
 }
 
 
 // This gets set as the default handler, and gets called when no other command matches.
 void unrecognized(const char *command) {
-  Serial.println("I'm sorry, Dave. I'm afraid I can't do that.");
+    Serial.println("I'm sorry, Dave. I'm afraid I can't do that.");
 }
 
 void brake_motors(){
-  left_power = 0;
-  right_power = 0;
-  function_running = 1;
-  interval = 100;
-  function_run_time = millis();
+    left_power = 0;
+    right_power = 0;
+    function_running = 1;
+    interval = 100;
+    function_run_time = millis();
   
-  motorBrake(left, 100);
-  motorBrake(right, 100);
+    motorBrake(leftm, 100);
+    motorBrake(rightm, 100);
 }
