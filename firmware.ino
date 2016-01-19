@@ -138,15 +138,13 @@ void loop()
         //Left/Right short rotate and brake function are stopped after interval
     case 1:
         if (millis() > function_run_time + interval) {
-            leftStop();
-            rightStop();
+            all_stop();
             function_running = 0;
         }
         break;
     case 2:
         if (millis() > function_run_time + interval) {
-            leftStop();
-            rightStop();
+            all_stop();
             function_running = 0;
         }
         break;
@@ -194,19 +192,10 @@ void init_commandset()
 
     /* Movement commands */
     sCmd.addCommand("MOVE", run_engine);       // Runs wheel motors
-    sCmd.addCommand("FSTOP", force_stop);      // Force stops all motors
+    sCmd.addCommand("FSTOP", all_stop);      // Force stops all motors
 
     sCmd.addCommand("HAVEBALL", have_ball);    //Checks if we have the ball
     sCmd.addCommand("RESETHB", reset_have_ball); //Resets the intial value of the inital light sensor value
-  
-    sCmd.addCommand("SROTL", move_shortrotL);
-    sCmd.addCommand("SROTR", move_shortrotR);
-
-    /* Remote Control Commands */
-    sCmd.addCommand("RCFORWARD", rc_forward);
-    sCmd.addCommand("RCBACKWARD", rc_backward);
-    sCmd.addCommand("RCROTATL", rc_rotateL);
-    sCmd.addCommand("RCROTATR", rc_rotateR);
 
     /* Read from rotary encoders */
     sCmd.addCommand("GETE", getenc);
@@ -305,7 +294,6 @@ void led_off()
 }
 
 
-
 // Movement with argument commands
 void run_engine() 
 {
@@ -366,133 +354,24 @@ void run_engine()
 }
 
 
-// Function to stop left motor, also sets the speed to 0
-// (These are used so I don't have to copy and paste this code everywhere)
-void leftStop() 
+// Function to stop specific motor, also sets the power to 0
+void motor_stop(struct motor* m) 
 {
-    left_power = 0;
-    motorStop(leftm);
-}
-
-// Function to stop right motor, also sets the speed to 0
-void rightStop() 
-{
-    right_power = 0;
-    motorStop(rightm);
+    m->power = 0;
+    motorStop(m->port);
 }
 
 /* Force stops all motors */
-void force_stop()
+void all_stop()
 {
+    #ifdef FW_DEBUG
     Serial.println("Force stopping");
+    #endif
+    
     for (int i=0; i < num_drive_motors; i++){
         driveset[i]->power = 0;
     }
-    motorAllStop(); 
-}
-
-//Script to rotate the robot quickly to the left for a specified time.
-void move_shortrotL() 
-{
-    if(function_running != 1) {
-        char *arg1;
-        char *arg2;
-
-        arg1 = sCmd.next();
-        arg2 = sCmd.next();
-
-        if (arg1 != NULL) {
-            interval = atoi(arg1);
-        } 
-        else
-        {
-            interval = 250;
-        }
-
-        if (arg2 != NULL) {
-            srot_power = atoi(arg2);
-        }
-        else
-        {
-            srot_power = default_power;
-        }
-
-        motorForward(rightm, srot_power);
-        motorBackward(leftm, srot_power);
-        stop_flag = 0;
-
-        function_running = 1;
-        function_run_time = millis();
-    }
-}
-
-//Script to rotate the robot quickly to the right for a specified time.
-void move_shortrotR() 
-{
-    if(function_running != 2) {
-        char *arg1;
-        char *arg2;
-
-        arg1 = sCmd.next();
-        arg2 = sCmd.next();
-
-        if (arg1 != NULL) {
-            interval = atoi(arg1);
-        } 
-        else
-        {
-            //Left motor slightly weaker forwards, compensated here
-            interval = 300;
-        }
-
-        if (arg2 != NULL) {
-            srot_power = atoi(arg2);
-        }
-        else
-        {
-            srot_power = default_power;
-        }
-
-        motorForward(leftm, srot_power);
-        motorBackward(rightm, srot_power);
-        stop_flag = 0;
-
-        function_running = 2;
-        function_run_time = millis();
-    }
-
-}
-
-
-//Remote Control Commands
-void rc_forward() 
-{
-    Serial.println("Moving forward");
-    motorForward(4, 100);
-    motorForward(5, 100);
-
-}
-
-void rc_backward()
-{
-    Serial.println("Moving backward");
-    motorBackward(4, 100);
-    motorBackward(5, 100);
-
-}
-
-void rc_rotateL() 
-{
-    Serial.println("Rotating Left");
-    motorForward(4, 100);
-    motorBackward(5, 100);
-}
-
-void rc_rotateR() 
-{
-    Serial.println("Rotating Right");
-    motorForward(5, 100);
-    motorBackward(4, 100);
+    motorAllStop();
 }
 
 
@@ -504,12 +383,12 @@ void unrecognized(const char *command)
 
 void brake_motors()
 {
-    left_power = 0;
-    right_power = 0;
     function_running = 1;
     interval = 100;
     function_run_time = millis();
-  
-    motorBrake(leftm, 100);
-    motorBrake(rightm, 100);
+    
+    for(int i=0; i < num_drive_motors; i++){
+        driveset[i]->power = 0;
+        motorBrake(driveset[i]->port, 100);
+    }
 }
