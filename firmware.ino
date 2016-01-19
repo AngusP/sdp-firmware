@@ -356,57 +356,37 @@ void run_engine()
     Serial.println();
     #endif
 
-    /* //Stops the motors when the signal given is 0 0 */
-    /* if(new_left_power == 0 && new_right_power == 0){ */
-    /*     if(!stop_flag) { */
-    /*         brake_motors(); */
-    /*         stop_flag = 1; */
-    /*     } */
-    /* } else { */
-    /*     stop_flag = 0; */
-    /* } */
-
     if(allzero) {
-        if(!
+        if(!stop_flag){
+            brake_motors();
+            stop_flag = 1;
+        }
+    } else {
+        stop_flag = 0;
     }
     
 
     function_running = 0;
     
+    /* 
+       We could have logic here to prevent stalling and high current
+       draw, but given we've corrected the motors' speeds we can't
+       reliably check this so that's a TODO...
+    */
 
-    //Checks if the given speed is less than the minimum speed. If it is, 
-    //it sets the given power to the minimum power. Left motor.
-    if ((new_left_power != 0) && (abs(new_left_power) < minpower)) {
-        new_left_power = minpower * (new_left_power/abs(new_left_power)); // ooooh
-    }
-
-    if ((new_right_power != 0) && (abs(new_right_power) < minpower)) {
-        new_right_power = minpower  * (new_right_power/abs(new_right_power));
-    }
-
-    // Updates speed of right wheel motor only if a different power is given.
-    if(new_right_power != right_power){
-        right_power = new_right_power;
-        Serial.print("Changing right power to ");
-        Serial.println(right_power);
-        if(right_power < 0){
-            motorBackward(rightm, abs(right_power));
-        } 
-        else {
-            motorForward(rightm, right_power);
-        }
-    }
-
-    // Updates speed of left wheel motor only if a different power is given.
-    if(new_left_power != left_power){
-        left_power = new_left_power;
-        Serial.print("Changing left power to ");
-        Serial.println(left_power);
-        if(left_power < 0){
-            motorBackward(leftm, abs(left_power));
-        } 
-        else {
-            motorForward(leftm, left_power);
+    /* update speeds of all drive motors */
+    for(int i=0; i < num_drive_motors; i++){
+        driveset[i]->power = new_powers[i];
+        #ifdef FW_DEBUG
+        Serial.print("Changing power ");
+        Serial.print(i);
+        Serial.print(" to ");
+        Serial.println(new_powers[i]);
+        #endif
+        if(new_powers[i] < 0){
+            motorBackward(driveset[i]->port, abs(new_powers[i]));
+        } else {
+            motorForward(driveset[i]->port, abs(new_powers[i]));   
         }
     }
 }
