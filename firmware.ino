@@ -69,7 +69,7 @@ struct motor holo2;
 struct motor holo3;
 
 /* 
-   define an array of our drive motors,
+   Define an array of our drive motors,
    this generalises the motor control logic
 
    NB this is *not* itself a struct
@@ -186,12 +186,12 @@ void loop()
 ***/
 void init_commandset()
 {
-    /* etup callbacks for SerialCommand commands */
+    /* Setup callbacks for SerialCommand commands */
     sCmd.addCommand("ON",    led_on);          // Turns LED on
     sCmd.addCommand("OFF",   led_off);         // Turns LED off
 
     /* Movement commands */
-    sCmd.addCommand("MOVE", run_engine);       // Runs wheel motors
+    sCmd.addCommand("MOVE", run_motors);       // Runs wheel motors
     sCmd.addCommand("FSTOP", all_stop);      // Force stops all motors
 
     sCmd.addCommand("HAVEBALL", have_ball);    //Checks if we have the ball
@@ -205,10 +205,7 @@ void init_commandset()
 
 void updateMotorPositions()
 {
-    /* 
-       Request motor position deltas from encoder board
-    */
-
+    /* Request motor position deltas from encoder board */
     Wire.requestFrom(encoder_i2c_addr, num_drive_motors);
     for (int i = 0; i < num_drive_motors; i++) {
         positions[i] = (int8_t) Wire.read();
@@ -295,7 +292,7 @@ void led_off()
 
 
 // Movement with argument commands
-void run_engine() 
+void run_motors() 
 {
     int new_powers[num_drive_motors];
     int allzero = 0;
@@ -353,6 +350,18 @@ void run_engine()
     }
 }
 
+void brake_motors()
+{
+    function_running = 1;
+    interval = 100;
+    function_run_time = millis();
+    
+    for(int i=0; i < num_drive_motors; i++){
+        driveset[i]->power = 0;
+        motorBrake(driveset[i]->port, 100);
+    }
+}
+
 
 // Function to stop specific motor, also sets the power to 0
 void motor_stop(struct motor* m) 
@@ -379,16 +388,4 @@ void all_stop()
 void unrecognized(const char *command) 
 {
     Serial.println("I'm sorry, Dave. I'm afraid I can't do that.");
-}
-
-void brake_motors()
-{
-    function_running = 1;
-    interval = 100;
-    function_run_time = millis();
-    
-    for(int i=0; i < num_drive_motors; i++){
-        driveset[i]->power = 0;
-        motorBrake(driveset[i]->port, 100);
-    }
 }
