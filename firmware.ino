@@ -9,6 +9,9 @@
 #include "SerialCommand.h"
 #include "SDPArduino.h"
 #include <Wire.h>
+#include <Arduino.h>
+
+#define FW_DEBUG                             // Comment out to remove serial debug chatter
 
 #define arduinoLED 13                        // Arduino LED on board
 #define leftm 5                              // Left wheel motor
@@ -25,7 +28,6 @@
 #define ch1        0x83  // Read ADC for channel 1 - 0x83
 
 #define encoder_i2c_addr 5
-#define ROTARY_COUNT 2
 
 SerialCommand sCmd;                         // The SerialCommand object
 
@@ -52,9 +54,6 @@ int kicking = 0;
 long kick_interval;
 int kick_state = 0;
 
-// Rotary encoders
-int positions[ROTARY_COUNT] = {0};
-
 /***
     STRUCTURES & PROTOTYPES
 ***/
@@ -65,8 +64,9 @@ struct motor {
     float correction;
 };
 
-struct motor left;
-struct motor right;
+struct motor holo1;
+struct motor holo2;
+struct motor holo3;
 
 /* 
    define an array of our drive motors,
@@ -74,41 +74,56 @@ struct motor right;
 
    NB this is *not* itself a struct
 */
-struct motor* driveset[2] = {
-    &left,
-    &right
+const int num_drive_motors = 3;
+struct motor* driveset[num_drive_motors] = {
+    &holo1,
+    &holo2,
+    &holo3
 };
+
+// Rotary encoders
+int positions[num_drive_motors] = {0};
 
 
 /***
     LOOP & SETUP
 ***/
-void setup() {
+void setup()
+{
     pinMode(arduinoLED, OUTPUT);
     digitalWrite(arduinoLED, HIGH);
 
     SDPsetup();
 
     Serial.begin(115200);
-    init_commandset();
     Serial.println("ACK");
 
-    /* set up main drive motors */
-    left.port = 5;
-    left.encoder = 0;
-    left.direction = 1;
-    left.power = 0;
-    left.correction = 0.0;
+    init_commandset();
 
-    right.port = 4;
-    right.encoder = 1;
-    right.direction = 1;
-    right.power = 0;
-    right.correction = 0.0;
+    /* set up main drive motors */
+    holo1.port = 5;
+    holo1.encoder = 0;
+    holo1.direction = 1;
+    holo1.power = 0;
+    holo1.correction = 0.0;
+
+    holo2.port = 4;
+    holo2.encoder = 1;
+    holo2.direction = 1;
+    holo2.power = 0;
+    holo2.correction = 0.0;
+
+    holo3.port = 3;
+    holo3.encoder = 2;
+    holo3.direction = 1;
+    holo3.power = 0;
+    holo3.correction = 0.0;
 }
 
-void loop() { 
-    /* The program will enter the loop and first use the switch statement to check which
+void loop() 
+{ 
+    /* 
+       The program will enter the loop and first use the switch statement to check which
        function was set to be running last.
     */
 
@@ -187,7 +202,6 @@ void loop() {
             break;
         }
     }
-
 }
 
 
@@ -226,36 +240,37 @@ void init_commandset()
     sCmd.setDefaultHandler(unrecognized);      // Handler for command that isn't matched
 }
 
-void updateMotorPositions() {
-    /* Request motor position deltas from rotary slave board
-       Wire.requestFrom(encoder_i2c_addr, ROTARY_COUNT);
-  
-       // Update the recorded motor positions
-       for (int i = 0; i < ROTARY_COUNT; i++) {
-       positions[i] = (int8_t) Wire.read();  // Must cast to signed 8-bit type
-       }*/
+void updateMotorPositions()
+{
+    /* 
+       Request motor position deltas from encoder board
+    */
 
-    
+    Wire.requestFrom(encoder_i2c_addr, num_drive_motors);
+    for (int i = 0; i < num_drive_motors; i++) {
+        positions[i] = (int8_t) Wire.read();
+    }
 }
 
-void printMotorPositions() {
+void printMotorPositions()
+{
     Serial.print("Encoders: ");
-    for (int i = 0; i < ROTARY_COUNT; i++) {
+    for (int i = 0; i < num_drive_motors; i++) {
         Serial.print(positions[i]);
         Serial.print(' ');
     }
     Serial.println();
 }
 
-void getenc(){
+void getenc()
+{
     updateMotorPositions();
     printMotorPositions();
 }
 
 //Read data from light sensor method
-void readI2C(int portAddress, int channelAddr){
-  
-  
+void readI2C(int portAddress, int channelAddr)
+{
     switch(sensor_state) {
     case (0):
         Wire.beginTransmission(portAddress); 
@@ -292,21 +307,25 @@ void readI2C(int portAddress, int channelAddr){
   
 }
 
-void have_ball() {
+void have_ball() 
+{
     Serial.println(do_we_have_ball);
 }
 
-void reset_have_ball() {
+void reset_have_ball()
+{
     initial_has_been_set = false; 
 }
 
 // Test Commands
-void led_on() {
+void led_on() 
+{
     Serial.println("LED on");
     digitalWrite(arduinoLED, HIGH);
 }
 
-void led_off() {
+void led_off() 
+{
     Serial.println("LED off");
     digitalWrite(arduinoLED, LOW);
 }
@@ -314,37 +333,44 @@ void led_off() {
 
 
 // Movement with argument commands
-void run_engine() {
+void run_engine() 
+{
+    int new_powers[num_drive_motors];
+    int allzero = 0;
 
-    char *arg1;
-    char *arg2;
+    for (int i=0; i < num_drive_motors; i++){
+        new_powers[i] = atoi(sCmd.next());
+        /* If all zeros, stop motors */
+        allzero = allzero || new_powers[i];
+        /* Apply correction & direction here */
+        new_powers[i] *= driveset[i]->direction;
+        new_powers[i] += (int) lround(driveset[i]->correction);
+    }
 
-    arg1 = sCmd.next();
-    int new_left_power = atoi(arg1);
-
-    arg2 = sCmd.next();
-    int new_right_power = atoi(arg2);
-
+    #ifdef FW_DEBUG
     Serial.print("Moving ");
-    Serial.print(new_left_power);
-    Serial.print(" ");
-    Serial.println(new_right_power);
+    for(int i=0; i < num_drive_motors; i++){
+        Serial.print(new_powers[i]);
+        Serial.print(" ");
+    }
+    Serial.println();
+    #endif
 
-    // Compensate for direction
-    new_left_power *= motor_direction;
-    new_right_power *= motor_direction;
+    /* //Stops the motors when the signal given is 0 0 */
+    /* if(new_left_power == 0 && new_right_power == 0){ */
+    /*     if(!stop_flag) { */
+    /*         brake_motors(); */
+    /*         stop_flag = 1; */
+    /*     } */
+    /* } else { */
+    /*     stop_flag = 0; */
+    /* } */
 
-
-    //Stops the motors when the signal given is 0 0
-    if(new_left_power == 0 && new_right_power == 0){
-        if(!stop_flag) {
-            brake_motors();
-            stop_flag = 1;
-        }
-    } else {
-        stop_flag = 0;
+    if(allzero) {
+        if(!
     }
     
+
     function_running = 0;
     
 
@@ -383,18 +409,18 @@ void run_engine() {
             motorForward(leftm, left_power);
         }
     }
-
 }
 
 
 // Kick script
 
-void kick() {
+void kick() 
+{
     kicking = 1;
 }
 
-void move_kick() {
-
+void move_kick() 
+{
     switch(kick_state) {
     case(0):
         function_running = 0; // Set as a non scripted function. Is still blocking currently, may be changed
@@ -432,9 +458,8 @@ void move_kick() {
 
 
 // Moves the catcher to a catching position
-void move_catchup() {
-
-
+void move_catchup() 
+{
     Serial.println("Catcher on");
     //lift and move forward
     motorBackward(catcher, 100);
@@ -442,9 +467,8 @@ void move_catchup() {
 }
 
 // Stops lifting the catcher so it falls on the ball
-void move_catchdown() {
-
-
+void move_catchdown() 
+{
     Serial.println("Catcher off");
     //lift and move forward
     motorStop(catcher);
@@ -453,28 +477,32 @@ void move_catchdown() {
 
 // Function to stop left motor, also sets the speed to 0
 // (These are used so I don't have to copy and paste this code everywhere)
-void leftStop() {
+void leftStop() 
+{
     left_power = 0;
     motorStop(leftm);
 }
 
 // Function to stop right motor, also sets the speed to 0
-void rightStop() {
+void rightStop() 
+{
     right_power = 0;
     motorStop(rightm);
 }
 
-// Force stops all motors
-void force_stop(){
+/* Force stops all motors */
+void force_stop()
+{
     Serial.println("Force stopping");
-    left_power = 0;
-    right_power = 0;
+    for (int i=0; i < num_drive_motors; i++){
+        driveset[i]->power = 0;
+    }
     motorAllStop(); 
 }
 
 //Script to rotate the robot quickly to the left for a specified time.
-void move_shortrotL() {
-
+void move_shortrotL() 
+{
     if(function_running != 1) {
         char *arg1;
         char *arg2;
@@ -508,8 +536,8 @@ void move_shortrotL() {
 }
 
 //Script to rotate the robot quickly to the right for a specified time.
-void move_shortrotR() {
-
+void move_shortrotR() 
+{
     if(function_running != 2) {
         char *arg1;
         char *arg2;
@@ -546,29 +574,31 @@ void move_shortrotR() {
 
 
 //Remote Control Commands
-void rc_forward() {
-
+void rc_forward() 
+{
     Serial.println("Moving forward");
     motorForward(4, 100);
     motorForward(5, 100);
 
 }
 
-void rc_backward() {
-
+void rc_backward()
+{
     Serial.println("Moving backward");
     motorBackward(4, 100);
     motorBackward(5, 100);
 
 }
 
-void rc_rotateL() {
+void rc_rotateL() 
+{
     Serial.println("Rotating Left");
     motorForward(4, 100);
     motorBackward(5, 100);
 }
 
-void rc_rotateR() {
+void rc_rotateR() 
+{
     Serial.println("Rotating Right");
     motorForward(5, 100);
     motorBackward(4, 100);
@@ -576,11 +606,13 @@ void rc_rotateR() {
 
 
 // This gets set as the default handler, and gets called when no other command matches.
-void unrecognized(const char *command) {
+void unrecognized(const char *command) 
+{
     Serial.println("I'm sorry, Dave. I'm afraid I can't do that.");
 }
 
-void brake_motors(){
+void brake_motors()
+{
     left_power = 0;
     right_power = 0;
     function_running = 1;

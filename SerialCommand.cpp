@@ -77,7 +77,7 @@ void SerialCommand::readSerial() {
       Serial.print(inChar);   // Echo back to serial stream
     #endif
 
-    if (inChar == term) {     // Check for the terminator (default '\r') meaning end of command
+    if (inChar == term) {     // Check for the terminator (default '\n') meaning end of command
       #ifdef SERIALCOMMAND_DEBUG
         Serial.print("Received: ");
         Serial.println(buffer);
@@ -139,6 +139,6 @@ void SerialCommand::clearBuffer() {
  * Retrieve the next token ("word" or "argument") from the command buffer.
  * Returns NULL if no more tokens exist.
  */
-char *SerialCommand::next() {
+char* SerialCommand::next() {
   return strtok_r(NULL, delim, &last);
 }
