@@ -1,10 +1,10 @@
-/**
+/***
    
-   FIRMWARE
+    F I R M W A R E
 
-   Based on SDP 2015 Group 13 code
+    SDP2016 Group 1
 
-**/
+***/
 
 #include "SerialCommand.h"
 #include "SDPArduino.h"
@@ -24,14 +24,14 @@
 #define ch0        0x43  // Read ADC for channel 0 - 0x43
 #define ch1        0x83  // Read ADC for channel 1 - 0x83
 
-#define ROTARY_SLAVE_ADDRESS 5
+#define encoder_i2c_addr 5
 #define ROTARY_COUNT 2
 
-SerialCommand sCmd;                          // The SerialCommand object
+SerialCommand sCmd;                         // The SerialCommand object
 
 //Global powers for both movement motors
-int left_power = 0;                           // Speed of left wheel
-int right_power = 0;                          // Speed of right wheel
+int left_power = 0;                         // Speed of left wheel
+int right_power = 0;                        // Speed of right wheel
 int stop_flag = 0;
 
 //These global variables are used to keep track of the short rotate function
@@ -55,6 +55,10 @@ int kick_state = 0;
 // Rotary encoders
 int positions[ROTARY_COUNT] = {0};
 
+/***
+    STRUCTURES & PROTOTYPES
+***/
+void init_commandset();
 
 struct motor {
     int port, encoder, power, direction;
@@ -64,55 +68,41 @@ struct motor {
 struct motor left;
 struct motor right;
 
+/* 
+   define an array of our drive motors,
+   this generalises the motor control logic
+
+   NB this is *not* itself a struct
+*/
+struct motor* driveset[2] = {
+    &left,
+    &right
+};
+
+
+/***
+    LOOP & SETUP
+***/
 void setup() {
-    pinMode(arduinoLED, OUTPUT);               // Configure the onboard LED for output
-    digitalWrite(arduinoLED, LOW);             // default to LED off
+    pinMode(arduinoLED, OUTPUT);
+    digitalWrite(arduinoLED, HIGH);
 
     SDPsetup();
 
     Serial.begin(115200);
+    init_commandset();
+    Serial.println("ACK");
 
-    // Setup callbacks for SerialCommand commands
-    //Test commands
-    sCmd.addCommand("ON",    LED_on);          // Turns LED on
-    sCmd.addCommand("OFF",   LED_off);         // Turns LED off
-
-    //Movement commands
-    sCmd.addCommand("MOVE", run_engine);       // Runs wheel motors
-    sCmd.addCommand("FSTOP", force_stop);      // Force stops all motors
-    sCmd.addCommand("KICK", kick);        // Runs kick script
-    sCmd.addCommand("CATCHUP", move_catchup);      // Runs catch script
-    sCmd.addCommand("CATCHDOWN", move_catchdown);      // Runs catch script
-
-    sCmd.addCommand("HAVEBALL", have_ball);    //Checks if we have the ball
-    sCmd.addCommand("RESETHB", reset_have_ball); //Resets the intial value of the inital light sensor value
-  
-    sCmd.addCommand("SROTL", move_shortrotL);
-    sCmd.addCommand("SROTR", move_shortrotR);
-
-    //Remote Control Commands
-    sCmd.addCommand("RCFORWARD", rc_forward);
-    sCmd.addCommand("RCBACKWARD", rc_backward);
-    sCmd.addCommand("RCROTATL", rc_rotateL);
-    sCmd.addCommand("RCROTATR", rc_rotateR);
-
-    // Read from rotary encoders
-    sCmd.addCommand("GETE", getenc);
-
-    sCmd.setDefaultHandler(unrecognized);      // Handler for command that isn't matched
-
-    Serial.println("I am completely operational, and all my circuits are functioning perfectly.");
-
-    // Set up motors
+    /* set up main drive motors */
     left.port = 5;
     left.encoder = 0;
-    left.direction = -1;
+    left.direction = 1;
     left.power = 0;
     left.correction = 0.0;
 
     right.port = 4;
     right.encoder = 1;
-    right.direction = -1;
+    right.direction = 1;
     right.power = 0;
     right.correction = 0.0;
 }
@@ -147,7 +137,8 @@ void loop() {
         Serial.println("I shouldn't be here");
     }
 
-    sCmd.readSerial();                         // Processes serial commands
+    /* poll serial buffer & check against command set */
+    sCmd.readSerial();
 
     if(kicking) {
         if(millis() > kick_interval) {
@@ -199,23 +190,61 @@ void loop() {
 
 }
 
-void updateMotorPositions() {
-  // Request motor position deltas from rotary slave board
-  Wire.requestFrom(ROTARY_SLAVE_ADDRESS, ROTARY_COUNT);
+
+
+/***
+    FUNCTIONS
+***/
+void init_commandset()
+{
+    /* etup callbacks for SerialCommand commands */
+    sCmd.addCommand("ON",    LED_on);          // Turns LED on
+    sCmd.addCommand("OFF",   LED_off);         // Turns LED off
+
+    /* Movement commands */
+    sCmd.addCommand("MOVE", run_engine);       // Runs wheel motors
+    sCmd.addCommand("FSTOP", force_stop);      // Force stops all motors
+    sCmd.addCommand("KICK", kick);        // Runs kick script
+    sCmd.addCommand("CATCHUP", move_catchup);      // Runs catch script
+    sCmd.addCommand("CATCHDOWN", move_catchdown);      // Runs catch script
+
+    sCmd.addCommand("HAVEBALL", have_ball);    //Checks if we have the ball
+    sCmd.addCommand("RESETHB", reset_have_ball); //Resets the intial value of the inital light sensor value
   
-  // Update the recorded motor positions
-  for (int i = 0; i < ROTARY_COUNT; i++) {
-    positions[i] = (int8_t) Wire.read();  // Must cast to signed 8-bit type
-  }
+    sCmd.addCommand("SROTL", move_shortrotL);
+    sCmd.addCommand("SROTR", move_shortrotR);
+
+    /* Remote Control Commands */
+    sCmd.addCommand("RCFORWARD", rc_forward);
+    sCmd.addCommand("RCBACKWARD", rc_backward);
+    sCmd.addCommand("RCROTATL", rc_rotateL);
+    sCmd.addCommand("RCROTATR", rc_rotateR);
+
+    /* Read from rotary encoders */
+    sCmd.addCommand("GETE", getenc);
+
+    sCmd.setDefaultHandler(unrecognized);      // Handler for command that isn't matched
+}
+
+void updateMotorPositions() {
+    /* Request motor position deltas from rotary slave board
+       Wire.requestFrom(encoder_i2c_addr, ROTARY_COUNT);
+  
+       // Update the recorded motor positions
+       for (int i = 0; i < ROTARY_COUNT; i++) {
+       positions[i] = (int8_t) Wire.read();  // Must cast to signed 8-bit type
+       }*/
+
+    
 }
 
 void printMotorPositions() {
-  Serial.print("Encoders: ");
-  for (int i = 0; i < ROTARY_COUNT; i++) {
-    Serial.print(positions[i]);
-    Serial.print(' ');
-  }
-  Serial.println();
+    Serial.print("Encoders: ");
+    for (int i = 0; i < ROTARY_COUNT; i++) {
+        Serial.print(positions[i]);
+        Serial.print(' ');
+    }
+    Serial.println();
 }
 
 void getenc(){
@@ -287,8 +316,6 @@ void LED_off() {
 // Movement with argument commands
 void run_engine() {
 
-    //This is how arguments are tokenised with SerialCommand. Extra can be added
-    //by repeating this.
     char *arg1;
     char *arg2;
 
@@ -303,7 +330,7 @@ void run_engine() {
     Serial.print(" ");
     Serial.println(new_right_power);
 
-    // Compensate for wrong direction
+    // Compensate for direction
     new_left_power *= motor_direction;
     new_right_power *= motor_direction;
 
@@ -320,7 +347,6 @@ void run_engine() {
     
     function_running = 0;
     
-
 
     //Checks if the given speed is less than the minimum speed. If it is, 
     //it sets the given power to the minimum power. Left motor.
