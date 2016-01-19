@@ -198,8 +198,8 @@ void loop() {
 void init_commandset()
 {
     /* etup callbacks for SerialCommand commands */
-    sCmd.addCommand("ON",    LED_on);          // Turns LED on
-    sCmd.addCommand("OFF",   LED_off);         // Turns LED off
+    sCmd.addCommand("ON",    led_on);          // Turns LED on
+    sCmd.addCommand("OFF",   led_off);         // Turns LED off
 
     /* Movement commands */
     sCmd.addCommand("MOVE", run_engine);       // Runs wheel motors
@@ -301,12 +301,12 @@ void reset_have_ball() {
 }
 
 // Test Commands
-void LED_on() {
+void led_on() {
     Serial.println("LED on");
     digitalWrite(arduinoLED, HIGH);
 }
 
-void LED_off() {
+void led_off() {
     Serial.println("LED off");
     digitalWrite(arduinoLED, LOW);
 }
