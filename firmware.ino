@@ -61,7 +61,7 @@ void init_commandset();
 
 struct motor {
     int port, encoder, power, direction;
-    float correction;
+    float correction, speed;
 };
 
 struct motor holo1;
@@ -106,18 +106,21 @@ void setup()
     holo1.direction = 1;
     holo1.power = 0;
     holo1.correction = 0.0;
+    holo1.speed = 0.0;
 
     holo2.port = 4;
     holo2.encoder = 1;
     holo2.direction = 1;
     holo2.power = 0;
     holo2.correction = 0.0;
+    holo2.speed = 0.0;
 
     holo3.port = 3;
     holo3.encoder = 2;
     holo3.direction = 1;
     holo3.power = 0;
     holo3.correction = 0.0;
+    holo3.speed = 0.0;
 }
 
 void loop() 
@@ -154,32 +157,6 @@ void loop()
 
     /* poll serial buffer & check against command set */
     sCmd.readSerial();
-
-    if(kicking) {
-        if(millis() > kick_interval) {
-            switch(kick_state) {
-            case(0):
-                move_kick();
-                kick_state = 1;
-                kick_interval = kick_interval + 250;
-                break;
-            case(1):
-                move_kick();
-                kick_state = 2;
-                kick_interval = kick_interval + 300;
-                break;
-            case(2):
-                move_kick();
-                kick_state = 3;
-                kick_interval = kick_interval + 400;
-                break;
-            case(3):
-                move_kick();
-                kick_state = 0;
-                break;
-            }
-        }
-    }
   
     //Makes the sensor code run once per second. Change the int for different values
     if(millis() > time_since_last_run + 15) {
@@ -218,9 +195,6 @@ void init_commandset()
     /* Movement commands */
     sCmd.addCommand("MOVE", run_engine);       // Runs wheel motors
     sCmd.addCommand("FSTOP", force_stop);      // Force stops all motors
-    sCmd.addCommand("KICK", kick);        // Runs kick script
-    sCmd.addCommand("CATCHUP", move_catchup);      // Runs catch script
-    sCmd.addCommand("CATCHDOWN", move_catchdown);      // Runs catch script
 
     sCmd.addCommand("HAVEBALL", have_ball);    //Checks if we have the ball
     sCmd.addCommand("RESETHB", reset_have_ball); //Resets the intial value of the inital light sensor value
@@ -391,69 +365,6 @@ void run_engine()
     }
 }
 
-
-// Kick script
-
-void kick() 
-{
-    kicking = 1;
-}
-
-void move_kick() 
-{
-    switch(kick_state) {
-    case(0):
-        function_running = 0; // Set as a non scripted function. Is still blocking currently, may be changed
-      
-        kick_interval = millis();
-
-        leftStop();
-        rightStop();
-
-        Serial.println("Kicking");
-
-        motorBackward(catcher, 100);
-        break;
-        //delay(300);
-    case(1):
-        motorForward(kicker, 100);
-        motorForward(leftm, 70);
-        motorForward(rightm, 70);
-
-        break;
-        //delay(time);
-    case(2):
-        motorBackward(kicker, 100);
-        motorBackward(catcher, 100);
-        brake_motors();
-        break;
-    case(3):
-        motorStop(kicker);
-        motorStop(catcher);
-        kicking = 0;
-        break;
-    }
-
-}
-
-
-// Moves the catcher to a catching position
-void move_catchup() 
-{
-    Serial.println("Catcher on");
-    //lift and move forward
-    motorBackward(catcher, 100);
-
-}
-
-// Stops lifting the catcher so it falls on the ball
-void move_catchdown() 
-{
-    Serial.println("Catcher off");
-    //lift and move forward
-    motorStop(catcher);
-
-}
 
 // Function to stop left motor, also sets the speed to 0
 // (These are used so I don't have to copy and paste this code everywhere)
