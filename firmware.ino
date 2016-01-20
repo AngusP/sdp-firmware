@@ -115,7 +115,7 @@ void setup()
     holo2.correction = 0.0;
     holo2.speed = 0.0;
 
-    holo3.port = 3;
+    holo3.port = 2;
     holo3.encoder = 2;
     holo3.direction = 1;
     holo3.power = 0;
