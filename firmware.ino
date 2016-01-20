@@ -13,16 +13,6 @@
 
 #define FW_DEBUG                             // Comment out to remove serial debug chatter
 
-#define arduinoLED 13                        // Arduino LED on board
-#define leftm 5                              // Left wheel motor
-#define rightm 4                             // Right wheel motor
-#define catcher 2                            // Catcher motor
-#define kicker 3                             // Kicker motor
-#define minpower 30                          // Minimum Speed of the motors in power%
-#define default_power 50                     // If no power argument is given, this is the default
-
-#define motor_direction -1                   // Motors are backwards. Go figure.
-
 #define sensorAddr 0x39  // Sensor physical address on the power board - 0x39
 #define ch0        0x43  // Read ADC for channel 0 - 0x43
 #define ch1        0x83  // Read ADC for channel 1 - 0x83
@@ -31,13 +21,9 @@
 
 SerialCommand sCmd;                         // The SerialCommand object
 
-//Global powers for both movement motors
-int left_power = 0;                         // Speed of left wheel
-int right_power = 0;                        // Speed of right wheel
 int stop_flag = 0;
 
 //These global variables are used to keep track of the short rotate function
-int srot_power = default_power;             // Power on motor in short rotate
 int interval = 300;                         // Defines the interval between commands in the short rotate functions
 unsigned long function_run_time;            // Used in the Short Rotate Functions to measure time they have been running
 int function_running = 0;                   // Used to determine if there is a function running and which function it is
@@ -58,6 +44,13 @@ int kick_state = 0;
     STRUCTURES & PROTOTYPES
 ***/
 void init_commandset();
+
+struct state {
+    int battery, led, status_pin;
+    float heading;
+};
+
+struct state self;
 
 struct motor {
     int port, encoder, power, direction;
@@ -90,8 +83,9 @@ int positions[num_drive_motors] = {0};
 ***/
 void setup()
 {
-    pinMode(arduinoLED, OUTPUT);
-    digitalWrite(arduinoLED, HIGH);
+    self.status_pin = 13;
+    pinMode(self.status_pin, OUTPUT);
+    digitalWrite(self.status_pin, self.led);
 
     SDPsetup();
 
@@ -187,12 +181,11 @@ void loop()
 void init_commandset()
 {
     /* Setup callbacks for SerialCommand commands */
-    sCmd.addCommand("ON",    led_on);          // Turns LED on
-    sCmd.addCommand("OFF",   led_off);         // Turns LED off
+    sCmd.addCommand("L", led_toggle);          // Toggles LED
 
     /* Movement commands */
-    sCmd.addCommand("MOVE", run_motors);       // Runs wheel motors
-    sCmd.addCommand("FSTOP", all_stop);      // Force stops all motors
+    sCmd.addCommand("M", run_motors);       // Runs wheel motors
+    sCmd.addCommand("F", all_stop);      // Force stops all motors
 
     sCmd.addCommand("HAVEBALL", have_ball);    //Checks if we have the ball
     sCmd.addCommand("RESETHB", reset_have_ball); //Resets the intial value of the inital light sensor value
@@ -278,16 +271,16 @@ void reset_have_ball()
 }
 
 // Test Commands
-void led_on() 
+void led_toggle() 
 {
-    Serial.println("LED on");
-    digitalWrite(arduinoLED, HIGH);
-}
-
-void led_off() 
-{
-    Serial.println("LED off");
-    digitalWrite(arduinoLED, LOW);
+    self.led = !self.led;
+    if (self.led){
+        Serial.println("LED off");
+        digitalWrite(self.status_pin, LOW);
+    } else {
+        Serial.println("LED on");
+        digitalWrite(self.status_pin, HIGH);
+    }
 }
 
 
@@ -385,7 +378,8 @@ void all_stop()
 
 
 // This gets set as the default handler, and gets called when no other command matches.
-void unrecognized(const char *command) 
+void unrecognized(const char *command)
 {
-    Serial.println("I'm sorry, Dave. I'm afraid I can't do that.");
+    /* NACK */
+    Serial.println("N");
 }
