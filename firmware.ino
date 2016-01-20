@@ -46,7 +46,7 @@ int kick_state = 0;
 void init_commandset();
 
 struct state {
-    int battery, led, status_pin;
+    int battery, status_led, status_led_pin;
     float heading;
 };
 
@@ -74,6 +74,12 @@ struct motor* driveset[num_drive_motors] = {
     &holo3
 };
 
+struct sensor {
+    int i2c_addr, last_value;
+};
+
+struct sensor encoders;
+
 // Rotary encoders
 int positions[num_drive_motors] = {0};
 
@@ -83,9 +89,9 @@ int positions[num_drive_motors] = {0};
 ***/
 void setup()
 {
-    self.status_pin = 13;
-    pinMode(self.status_pin, OUTPUT);
-    digitalWrite(self.status_pin, self.led);
+    self.status_led_pin = 13;
+    pinMode(self.status_led_pin, OUTPUT);
+    digitalWrite(self.status_led_pin, self.status_led);
 
     SDPsetup();
 
@@ -273,13 +279,13 @@ void reset_have_ball()
 // Test Commands
 void led_toggle() 
 {
-    self.led = !self.led;
-    if (self.led){
+    self.status_led = !self.status_led;
+    if (self.status_led){
         Serial.println("LED off");
-        digitalWrite(self.status_pin, LOW);
+        digitalWrite(self.status_led_pin, LOW);
     } else {
         Serial.println("LED on");
-        digitalWrite(self.status_pin, HIGH);
+        digitalWrite(self.status_led_pin, HIGH);
     }
 }
 
