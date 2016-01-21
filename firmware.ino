@@ -44,6 +44,19 @@ int kick_state = 0;
     STRUCTURES & PROTOTYPES
 ***/
 void init_commandset();
+void updateMotorPositions();
+void printMotorPositions();
+void getenc();
+void readI2C(int, int);
+void have_ball();
+void reset_have_ball();
+void led_toggle();
+void run_motors();
+void brake_motors();
+void all_stop();
+void motor_stop(struct motor*);
+void unrecognised(const char *);
+
 
 struct state {
     int battery, status_led, status_led_pin;
@@ -384,7 +397,7 @@ void all_stop()
 
 
 // This gets set as the default handler, and gets called when no other command matches.
-void unrecognized(const char *command)
+void unrecognized(const char* command)
 {
     /* NACK */
     Serial.println("N");
