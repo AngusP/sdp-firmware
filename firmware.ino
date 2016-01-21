@@ -62,6 +62,7 @@ void init_receive();
 byte receive_bytes[250];
 int send_frequency;
 int num_bytes;
+int sending_index;
 bool receiving = false;
 bool sending = false;
 unsigned long last_send;
@@ -203,22 +204,46 @@ void loop()
     /* Milestone 1 */
 
     if (receiving){
+        sending_index = 0;
+        Serial.println("Waiting for bytes...");
         /* Block and read serial */
-        for (int i=0; i<num_bytes; i++){
-            // Send NACK if we were expecting stuff but there isn't any
-            if (!Serial.available()) return unrecognized(NULL);
-            
-            receive_bytes[i] = (byte) Serial.read();
+        while (sending_index < num_bytes){
+            if(Serial.available()){
+                receive_bytes[sending_index++] = (byte) Serial.read();
+                Serial.print("Read 0x");
+                Serial.println(receive_bytes[sending_index-1], HEX);
+            }
         }
         sending = true;
         receiving = false;
+        sending_index = 0;
         last_send = millis();
-        time_period = 1.0/(long) send_frequency * 1000.0; // *1000 because millis not seconds
+        time_period = (1.0/(long) send_frequency) * 1000.0; // *1000 because millis not seconds
+        Serial.println("Got it, thanks bub");
+        Serial.print("Writing at ");
+        Serial.print(send_frequency);
+        Serial.print(" (");
+        Serial.print(time_period);
+        Serial.println(" s^-1)");
     }
 
     // Ewww.
-    if (sending && (last_send + time_period) >= millis()){
-        
+    if (sending && (millis() >= (last_send + time_period))){
+        if (sending_index < num_bytes) {
+            // 0x45 is the address according to the milestone page
+            Wire.beginTransmission(0x45);
+            Serial.print("Writing 0x");
+            Serial.print(receive_bytes[sending_index], HEX);
+            Serial.println(" to bus");
+            Wire.write(receive_bytes[sending_index++]);
+            Wire.endTransmission();
+        } else {
+            sending = false;
+            Serial.print("Sent ");
+            Serial.print(num_bytes);
+            Serial.println(" bytes over the i2c bus");
+        }
+        last_send = millis();
     }
 
     
@@ -460,3 +485,4 @@ void init_receive()
 
     receiving = true;
 }
+
