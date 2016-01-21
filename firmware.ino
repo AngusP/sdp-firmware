@@ -57,6 +57,15 @@ void all_stop();
 void motor_stop(struct motor*);
 void unrecognised(const char *);
 
+/* milestone hoops: */
+void init_receive();
+byte receive_bytes[250];
+int send_frequency;
+int num_bytes;
+bool receiving = false;
+bool sending = false;
+unsigned long last_send;
+long time_period; 
 
 struct state {
     int battery, status_led, status_led_pin;
@@ -190,6 +199,29 @@ void loop()
             break;
         }
     }
+
+    /* Milestone 1 */
+
+    if (receiving){
+        /* Block and read serial */
+        for (int i=0; i<num_bytes; i++){
+            // Send NACK if we were expecting stuff but there isn't any
+            if (!Serial.available()) return unrecognized(NULL);
+            
+            receive_bytes[i] = (byte) Serial.read();
+        }
+        sending = true;
+        receiving = false;
+        last_send = millis();
+        time_period = 1.0/(long) send_frequency * 1000.0; // *1000 because millis not seconds
+    }
+
+    // Ewww.
+    if (sending && (last_send + time_period) >= millis()){
+        
+    }
+
+    
 }
 
 
@@ -211,6 +243,8 @@ void init_commandset()
 
     /* Read from rotary encoders */
     sCmd.addCommand("GETE", getenc);
+
+    sCmd.addCommand("Recv", init_receive);
 
     sCmd.setDefaultHandler(unrecognized);      // Handler for command that isn't matched
 }
@@ -401,4 +435,28 @@ void unrecognized(const char* command)
 {
     /* NACK */
     Serial.println("N");
+}
+
+
+
+/** MILESTONE 1 **/
+
+/*
+  Change state to waiting for up-to 250 bytes from controller
+ 
+  Comms syntax:
+  Recv (int:send speed) (int:number of bytes)
+*/
+void init_receive()
+{
+    char* arg1 = sCmd.next();
+    char* arg2 = sCmd.next();
+    bool die = false;
+    
+    arg1 == NULL ? die = true : send_frequency = atoi(arg1);
+    arg2 == NULL ? die = true : num_bytes      = atoi(arg2);
+
+    if(die) return unrecognized(NULL);
+
+    receiving = true;
 }
