@@ -114,21 +114,21 @@ void setup()
     init_commandset();
 
     /* set up main drive motors */
-    holo1.port = 5;
+    holo1.port = 2;
     holo1.encoder = 0;
     holo1.direction = 1;
     holo1.power = 0;
     holo1.correction = 0.0;
     holo1.speed = 0.0;
 
-    holo2.port = 4;
+    holo2.port = 5;
     holo2.encoder = 1;
     holo2.direction = 1;
     holo2.power = 0;
     holo2.correction = 0.0;
     holo2.speed = 0.0;
 
-    holo3.port = 2;
+    holo3.port = 4;
     holo3.encoder = 2;
     holo3.direction = 1;
     holo3.power = 0;
