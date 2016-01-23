@@ -80,9 +80,30 @@ struct motor {
     float correction, speed;
 };
 
-struct motor holo1;
-struct motor holo2;
-struct motor holo3;
+struct motor holo1 = {
+    .port         = 2,
+    .encoder      = 0,
+    .power        = 0,
+    .direction    = 1,
+    .correction   = 0.0,
+    .speed        = 0.0
+};
+struct motor holo2 = {
+    .port         = 5,
+    .encoder      = 1,
+    .power        = 0,
+    .direction    = 1,
+    .correction   = 0.0,
+    .speed        = 0.0
+};
+struct motor holo3 = {
+    .port         = 4,
+    .encoder      = 2,
+    .power        = 0,
+    .direction    = 1,
+    .correction   = 0.0,
+    .speed        = 0.0
+};
 
 /* 
    Define an array of our drive motors,
@@ -98,10 +119,13 @@ struct motor* driveset[num_drive_motors] = {
 };
 
 struct sensor {
-    int i2c_addr, last_value;
+    int i2c_addr, last_val;
 };
 
-struct sensor encoders;
+struct sensor encoders = {
+    .i2c_addr = 0x05,
+    .last_val = 0
+};
 
 // Rotary encoders
 int positions[num_drive_motors] = {0};
@@ -122,28 +146,6 @@ void setup()
     Serial.println("ACK");
 
     init_commandset();
-
-    /* set up main drive motors */
-    holo1.port = 2;
-    holo1.encoder = 0;
-    holo1.direction = 1;
-    holo1.power = 0;
-    holo1.correction = 0.0;
-    holo1.speed = 0.0;
-
-    holo2.port = 5;
-    holo2.encoder = 1;
-    holo2.direction = 1;
-    holo2.power = 0;
-    holo2.correction = 0.0;
-    holo2.speed = 0.0;
-
-    holo3.port = 4;
-    holo3.encoder = 2;
-    holo3.direction = 1;
-    holo3.power = 0;
-    holo3.correction = 0.0;
-    holo3.speed = 0.0;
 }
 
 void loop() 
