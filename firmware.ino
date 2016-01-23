@@ -10,6 +10,7 @@
 #include "SDPArduino.h"
 #include <Wire.h>
 #include <Arduino.h>
+#include <Adafruit_NeoPixel.h>
 
 #define FW_DEBUG                             // Comment out to remove serial debug chatter
 
@@ -20,6 +21,11 @@
 #define encoder_i2c_addr 5
 
 SerialCommand sCmd;                         // The SerialCommand object
+
+// ALL THE LEDEEES!
+#define NUM_PIXELS 5
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, 5, NEO_GRB + NEO_KHZ800);
+// Ards are Num pixels, Pin and other stuff
 
 int stop_flag = 0;
 
@@ -146,6 +152,13 @@ void setup()
     Serial.println("ACK");
 
     init_commandset();
+
+    strip.begin();
+    strip.show();
+
+    for (int i=0; i<5; i++)
+        strip.setPixelColor(i, 255, 255, 255);
+    strip.show();
 }
 
 void loop() 
@@ -289,6 +302,8 @@ void init_commandset()
     sCmd.addCommand("GETE", getenc);
 
     sCmd.addCommand("Recv", init_receive);
+
+    sCmd.addCommand("PXL", set_pixels);  // Set LED colour
 
     sCmd.setDefaultHandler(unrecognized);      // Handler for command that isn't matched
 }
@@ -471,6 +486,24 @@ void all_stop()
         driveset[i]->power = 0;
     }
     motorAllStop();
+}
+
+void set_pixels()
+{
+    byte red   = atoi(sCmd.next());
+    byte green = atoi(sCmd.next());
+    byte blue  = atoi(sCmd.next());
+
+    #ifdef FW_DEBUG
+    Serial.print("Set pixel colour to ");
+    Serial.print(red,HEX);
+    Serial.print(green,HEX);
+    Serial.println(blue,HEX);
+    #endif
+    
+    for (int i=0; i<NUM_PIXELS; i++)
+        strip.setPixelColor(i, red, green, blue);
+    strip.show();
 }
 
 
