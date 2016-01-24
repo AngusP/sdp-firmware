@@ -106,7 +106,7 @@ struct sensor encoders = {
 */
 struct motor {
     int port, encoder, power, direction;
-    float correction, speed;
+    float speed;
 };
 
 struct motor holo1 = {
@@ -114,7 +114,6 @@ struct motor holo1 = {
     .encoder      = 0,
     .power        = 0,
     .direction    = 1,
-    .correction   = 0.0,
     .speed        = 0.0
 };
 struct motor holo2 = {
@@ -122,7 +121,6 @@ struct motor holo2 = {
     .encoder      = 1,
     .power        = 0,
     .direction    = 1,
-    .correction   = 0.0,
     .speed        = 0.0
 };
 struct motor holo3 = {
@@ -130,7 +128,6 @@ struct motor holo3 = {
     .encoder      = 2,
     .power        = 0,
     .direction    = 1,
-    .correction   = 0.0,
     .speed        = 0.0
 };
 
@@ -231,13 +228,6 @@ void loop()
         if (sending_index < num_bytes) {
             // 0x45 is the address according to the milestone page
             Wire.beginTransmission(0x45);
-            
-            #ifdef FW_DEBUG
-            Serial.print(F("Writing 0x"));
-            Serial.print(receive_bytes[sending_index], HEX);
-            Serial.println(F(" to bus"));
-            #endif
-
             Wire.write(receive_bytes[sending_index++]);
             Wire.endTransmission();
         } else {
