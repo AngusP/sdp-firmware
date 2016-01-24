@@ -152,7 +152,7 @@ void setup()
     SDPsetup();
 
     Serial.begin(115200);
-    Serial.println("ACK");
+    Serial.println(F("ACK"));
 
     init_commandset();
 
@@ -177,7 +177,7 @@ void loop()
         sending_index = 0;
 
         #ifdef FW_DEBUG
-        Serial.println("Waiting for bytes...");
+        Serial.println(F("Waiting for bytes..."));
         #endif
         
         /* Block and read serial */
@@ -186,7 +186,7 @@ void loop()
                 receive_bytes[sending_index++] = (byte) Serial.read();
 
                 #ifdef FW_DEBUG
-                Serial.print("Read 0x");
+                Serial.print(F("Read 0x"));
                 Serial.println(receive_bytes[sending_index-1], HEX);
                 #endif
             }
@@ -198,12 +198,12 @@ void loop()
         time_period = (1.0/(long) send_frequency) * 1000.0; // *1000 because millis not seconds
 
         #ifdef FW_DEBUG
-        Serial.println("Got it, thanks bub");
-        Serial.print("Writing at ");
+        Serial.println(F("Got it, thanks bub"));
+        Serial.print(F("Writing at "));
         Serial.print(send_frequency);
-        Serial.print(" (");
+        Serial.print(F(" ("));
         Serial.print(time_period);
-        Serial.println(" s^-1)");
+        Serial.println(F(" s^-1)"));
         #endif
     }
 
@@ -214,9 +214,9 @@ void loop()
             Wire.beginTransmission(0x45);
             
             #ifdef FW_DEBUG
-            Serial.print("Writing 0x");
+            Serial.print(F("Writing 0x"));
             Serial.print(receive_bytes[sending_index], HEX);
-            Serial.println(" to bus");
+            Serial.println(F(" to bus"));
             #endif
 
             Wire.write(receive_bytes[sending_index++]);
@@ -225,9 +225,9 @@ void loop()
             sending = false;
             
             #ifdef FW_DEBUG
-            Serial.print("Sent ");
+            Serial.print(F("Sent "));
             Serial.print(num_bytes);
-            Serial.println(" bytes over the i2c bus");
+            Serial.println(F(" bytes over the i2c bus"));
             #endif
         }
         last_send = millis();
@@ -271,7 +271,7 @@ void updateMotorPositions()
 
 void printMotorPositions()
 {
-    Serial.print("Encoders: ");
+    Serial.print(F("Encoders: "));
     for (int i = 0; i < num_drive_motors; i++) {
         Serial.print(positions[i]);
         Serial.print(' ');
@@ -290,10 +290,10 @@ void led_toggle()
 {
     self.status_led = !self.status_led;
     if (self.status_led){
-        Serial.println("LED off");
+        Serial.println(F("LED off"));
         digitalWrite(self.status_led_pin, LOW);
     } else {
-        Serial.println("LED on");
+        Serial.println(F("LED on"));
         digitalWrite(self.status_led_pin, HIGH);
     }
 }
@@ -315,7 +315,7 @@ void run_motors()
     }
 
     #ifdef FW_DEBUG
-    Serial.print("Moving ");
+    Serial.print(F("Moving "));
     for(int i=0; i < num_drive_motors; i++){
         Serial.print(new_powers[i]);
         Serial.print(" ");
@@ -329,16 +329,16 @@ void run_motors()
     /* 
        We could have logic here to prevent stalling and high current
        draw, but given we've corrected the motors' speeds we can't
-       reliably check this so that's a TODO...
+       reliably check this yet so that's a TODO...
     */
 
     /* update speeds of all drive motors */
     for(int i=0; i < num_drive_motors; i++){
         driveset[i]->power = new_powers[i];
         #ifdef FW_DEBUG
-        Serial.print("Changing power ");
+        Serial.print(F("Changing power "));
         Serial.print(i);
-        Serial.print(" to ");
+        Serial.print(F(" to "));
         Serial.println(new_powers[i]);
         #endif
         if(new_powers[i] < 0){
@@ -369,7 +369,7 @@ void motor_stop(struct motor* m)
 void all_stop()
 {
     #ifdef FW_DEBUG
-    Serial.println("Force stopping");
+    Serial.println(F("Force stopping"));
     #endif
     
     for (int i=0; i < num_drive_motors; i++){
@@ -385,7 +385,7 @@ void set_pixels()
     byte blue  = atoi(sCmd.next());
 
     #ifdef FW_DEBUG
-    Serial.print("Set pixel colour to ");
+    Serial.print(F("Set pixel colour to "));
     Serial.print(red,HEX);
     Serial.print(green,HEX);
     Serial.println(blue,HEX);
@@ -401,7 +401,7 @@ void set_pixels()
 void unrecognized(const char* command)
 {
     /* NACK */
-    Serial.println("N");
+    Serial.println(F("N"));
 }
 
 
