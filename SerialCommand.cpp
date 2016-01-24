@@ -56,6 +56,19 @@ void SerialCommand::addCommand(const char *command, void (*function)()) {
   commandCount++;
 }
 
+void SerialCommand::dumpCommandSet() {
+    #ifdef SERIALCOMMAND_DEBUG
+    Serial.println("Dumping command set...");
+    #endif
+
+    for (byte i=0; i<commandCount; i++)
+        Serial.println(commandList[i].command);
+
+    #ifdef SERIALCOMMAND_DEBUG
+    Serial.println("done.");
+    #endif
+}
+
 /**
  * This sets up a handler to be called in the event that the receveived command string
  * isn't in the list of commands.

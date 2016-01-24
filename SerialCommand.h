@@ -52,6 +52,8 @@ class SerialCommand {
     void clearBuffer();   // Clears the input buffer.
     char *next();         // Returns pointer to next token found in command buffer (for getting arguments to commands).
 
+    void dumpCommandSet(); // Print out all valid commands
+
   private:
     // Command/handler dictionary
     struct SerialCommandCallback {

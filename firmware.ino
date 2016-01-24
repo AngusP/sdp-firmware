@@ -31,15 +31,17 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, 5, NEO_GRB + NEO_KHZ800)
     STRUCTURES & PROTOTYPES
 ***/
 void init_commandset();
-void updateMotorPositions();
-void printMotorPositions();
-void getenc();
+void pong();
+void dump_commands();
+void poll_encoders();
 void led_toggle();
+void write_powers();
 void run_motors();
 void brake_motors();
 void all_stop();
 void motor_stop(struct motor*);
 void unrecognised(const char*);
+void print_speeds();
 
 /* milestone hoops: */
 void init_receive();
@@ -76,56 +78,57 @@ struct process {
     void (*callback)();
 };
 
-/*struct process test = {
+/*
+  Toggle LED ~1 time per second
+  999 so it is unlikely to coincide
+  with things that actually have to 
+  happen once per second
+*/
+struct process heartbeat = {
     .last_run = 0,
-    .interval = 1000,
-    .callback = &testfunc
-};*/
+    .interval = 999,
+    .callback = &led_toggle
+};
+
+struct process update_speeds = {
+    .last_run = 0,
+    .interval = 50,
+    .callback = &poll_encoders
+};
 
 struct process* tasks[] = {
-    //&test
-};
-
-
-/* 
-   Sensor information, may be replaced
-   with specific classes per sensor
-*/
-struct sensor {
-    int i2c_addr, last_val;
-};
-
-struct sensor encoders = {
-    .i2c_addr = 0x05,
-    .last_val = 0
+    &heartbeat,
+    &update_speeds
 };
 
 /* 
    Generic motor structure, carries
-   around all needed information
+   around all needed information.
+   
+   IT IS ASSUMED that the encoders
+   are connected in the same order
+   that the motors are added to the
+   driveset array below.
 */
 struct motor {
-    int port, encoder, power, direction;
+    int port, power, direction;
     float speed;
 };
 
 struct motor holo1 = {
     .port         = 2,
-    .encoder      = 0,
     .power        = 0,
     .direction    = 1,
     .speed        = 0.0
 };
 struct motor holo2 = {
     .port         = 5,
-    .encoder      = 1,
     .power        = 0,
     .direction    = 1,
     .speed        = 0.0
 };
 struct motor holo3 = {
     .port         = 4,
-    .encoder      = 2,
     .power        = 0,
     .direction    = 1,
     .speed        = 0.0
@@ -163,6 +166,8 @@ void setup()
 
     init_commandset();
 
+    sCmd.dumpCommandSet();
+    
     strip.begin();
     strip.show();
 
@@ -211,7 +216,7 @@ void loop()
         receiving = false;
         sending_index = 0;
         last_send = millis();
-        time_period = (1.0/(long) send_frequency) * 1000.0; // *1000 because millis not seconds
+        time_period = (1.0/(long) send_frequency) * 1000.0;
 
         #ifdef FW_DEBUG
         Serial.println(F("Got it, thanks bub"));
@@ -253,60 +258,96 @@ void loop()
 void init_commandset()
 {
     /* Setup callbacks for SerialCommand commands */
-    sCmd.addCommand("L", led_toggle);          // Toggles LED
+    sCmd.addCommand("L", led_toggle);        // Toggles LED
+    sCmd.addCommand("ping", pong);           // Check serial link
+    sCmd.addCommand("help", dump_commands);
 
     /* Movement commands */
-    sCmd.addCommand("M", run_motors);       // Runs wheel motors
-    sCmd.addCommand("F", all_stop);      // Force stops all motors
+    sCmd.addCommand("M", run_motors);        // Runs wheel motors
+    sCmd.addCommand("F", all_stop);          // Force stops all motors
 
     /* Read from rotary encoders */
-    sCmd.addCommand("GETE", getenc);
+    sCmd.addCommand("Speeds", print_speeds);
 
     /* Misc commands */
-    sCmd.addCommand("Recv", init_receive);
-    sCmd.addCommand("Pixels", set_pixels);  // Set LED colour
+    sCmd.addCommand("Recv", init_receive);   // Milestone 1
+    sCmd.addCommand("Pixels", set_pixels);   // Set LED colour
 
-    sCmd.setDefaultHandler(unrecognized);      // Handler for command that isn't matched
+    sCmd.setDefaultHandler(unrecognized);    // Handler for command that isn't matched
 }
 
-void updateMotorPositions()
+void pong()
 {
-    /* Request motor position deltas from encoder board */
+    Serial.println("pong");
+}
+
+void dump_commands()
+{
+    Serial.println("Valid input commands: (some have arguments)");
+    sCmd.dumpCommandSet();
+}
+
+/*
+  Callback for the update_speeds process
+*/
+void poll_encoders()
+{
     Wire.requestFrom(encoder_i2c_addr, num_drive_motors);
+
     for (int i = 0; i < num_drive_motors; i++) {
-        positions[i] = (int8_t) Wire.read();
+        byte delta = (int8_t) Wire.read();
+        if (driveset[i]->power < 0) delta = 0xFF - delta;
+        /*
+          Update speed using the time now and the time we last checked
+        */
+        driveset[i]->speed = (float) delta /
+            ((float) millis() - (float) update_speeds.last_run);
     }
 }
 
-void printMotorPositions()
+void print_speeds()
 {
-    Serial.print(F("Encoders: "));
     for (int i = 0; i < num_drive_motors; i++) {
-        Serial.print(positions[i]);
-        Serial.print(' ');
+        Serial.print(i);
+        Serial.print(F(": "));
+        Serial.print(driveset[i]->speed);
+        Serial.print(F("stops/s "));
     }
     Serial.println();
 }
 
-void getenc()
-{
-    updateMotorPositions();
-    printMotorPositions();
-}
-
-// Test Commands
+/*
+  Test Commands 
+*/
 void led_toggle() 
 {
     self.status_led = !self.status_led;
     if (self.status_led){
-        Serial.println(F("LED off"));
         digitalWrite(self.status_led_pin, LOW);
     } else {
-        Serial.println(F("LED on"));
         digitalWrite(self.status_led_pin, HIGH);
     }
 }
 
+void write_powers()
+{
+    for(int i=0; i < num_drive_motors; i++){
+        #ifdef FW_DEBUG
+        Serial.print(i);
+        Serial.print(F(": "));
+        Serial.print(driveset[i]->power);
+        Serial.print(F(" "));
+        #endif
+        if(driveset[i]->power < 0){
+            motorBackward(driveset[i]->port, abs(driveset[i]->power));
+        } else {
+            motorForward(driveset[i]->port,  abs(driveset[i]->power));   
+        }
+    }
+    #ifdef FW_DEBUG
+    Serial.println();
+    #endif
+}
 
 // Movement with argument commands
 void run_motors() 
@@ -320,42 +361,20 @@ void run_motors()
         allzero = allzero || new_powers[i];
         /* Apply correction & direction here */
         new_powers[i] *= driveset[i]->direction;
-        new_powers[i] += (int) lround(driveset[i]->correction);
     }
 
     #ifdef FW_DEBUG
-    Serial.print(F("Moving "));
-    for(int i=0; i < num_drive_motors; i++){
-        Serial.print(new_powers[i]);
-        Serial.print(" ");
-    }
-    Serial.println();
+    Serial.println(F("Moving"));
     #endif
 
     if(allzero)
         brake_motors();
-    
-    /* 
-       We could have logic here to prevent stalling and high current
-       draw, but given we've corrected the motors' speeds we can't
-       reliably check this yet so that's a TODO...
-    */
 
     /* update speeds of all drive motors */
     for(int i=0; i < num_drive_motors; i++){
         driveset[i]->power = new_powers[i];
-        #ifdef FW_DEBUG
-        Serial.print(F("Changing power "));
-        Serial.print(i);
-        Serial.print(F(" to "));
-        Serial.println(new_powers[i]);
-        #endif
-        if(new_powers[i] < 0){
-            motorBackward(driveset[i]->port, abs(new_powers[i]));
-        } else {
-            motorForward(driveset[i]->port, abs(new_powers[i]));   
-        }
     }
+    write_powers();
 }
 
 void brake_motors()
