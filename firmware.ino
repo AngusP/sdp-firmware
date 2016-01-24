@@ -165,14 +165,8 @@ void setup()
     Serial.println(F("STARTUP"));
 
     init_commandset();
-
-    sCmd.dumpCommandSet();
     
     strip.begin();
-    strip.show();
-
-    for (int i=0; i<5; i++)
-        strip.setPixelColor(i, 255, 255, 255);
     strip.show();
 }
 
