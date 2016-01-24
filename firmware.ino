@@ -152,7 +152,7 @@ void setup()
     SDPsetup();
 
     Serial.begin(115200);
-    Serial.println(F("ACK"));
+    Serial.println(F("STARTUP"));
 
     init_commandset();
 
@@ -255,7 +255,7 @@ void init_commandset()
 
     /* Misc commands */
     sCmd.addCommand("Recv", init_receive);
-    sCmd.addCommand("Pixels ", set_pixels);  // Set LED colour
+    sCmd.addCommand("Pixels", set_pixels);  // Set LED colour
 
     sCmd.setDefaultHandler(unrecognized);      // Handler for command that isn't matched
 }
@@ -397,7 +397,10 @@ void set_pixels()
 }
 
 
-// This gets set as the default handler, and gets called when no other command matches.
+/*
+This gets set as the default input handler, and gets 
+called when no other command matches.
+*/
 void unrecognized(const char* command)
 {
     /* NACK */
