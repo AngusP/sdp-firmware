@@ -27,25 +27,6 @@ SerialCommand sCmd;                         // The SerialCommand object
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, 5, NEO_GRB + NEO_KHZ800);
 // Ards are Num pixels, Pin and other stuff
 
-int stop_flag = 0;
-
-//These global variables are used to keep track of the short rotate function
-int interval = 300;                         // Defines the interval between commands in the short rotate functions
-unsigned long function_run_time;            // Used in the Short Rotate Functions to measure time they have been running
-int function_running = 0;                   // Used to determine if there is a function running and which function it is
-
-//For the sensor function
-unsigned long time_since_last_run = 0;
-int sensor_state = 0;
-boolean do_we_have_ball;
-int initial_light_value = 0;
-boolean initial_has_been_set = false;
-
-//Kicking
-int kicking = 0;
-long kick_interval;
-int kick_state = 0;
-
 /***
     STRUCTURES & PROTOTYPES
 ***/
@@ -53,15 +34,12 @@ void init_commandset();
 void updateMotorPositions();
 void printMotorPositions();
 void getenc();
-void readI2C(int, int);
-void have_ball();
-void reset_have_ball();
 void led_toggle();
 void run_motors();
 void brake_motors();
 void all_stop();
 void motor_stop(struct motor*);
-void unrecognised(const char *);
+void unrecognised(const char*);
 
 /* milestone hoops: */
 void init_receive();
@@ -74,13 +52,48 @@ bool sending = false;
 unsigned long last_send;
 long time_period; 
 
+/* 
+   Hold state variables
+*/
 struct state {
     int battery, status_led, status_led_pin;
     float heading;
 };
 
-struct state self;
+struct state self = {
+    .battery = 100,
+    .status_led = 0,
+    .status_led_pin = 13,
+    .heading = 0.0
+};
 
+/* 
+   Process structure, for defining a 
+   clock synchronous process 
+*/
+struct process {
+    unsigned long last_run, interval;
+    void (*callback)();
+};
+
+
+/* 
+   Sensor information, may be replaced
+   with specific classes per sensor
+*/
+struct sensor {
+    int i2c_addr, last_val;
+};
+
+struct sensor encoders = {
+    .i2c_addr = 0x05,
+    .last_val = 0
+};
+
+/* 
+   Generic motor structure, carries
+   around all needed information
+*/
 struct motor {
     int port, encoder, power, direction;
     float correction, speed;
@@ -114,7 +127,7 @@ struct motor holo3 = {
 /* 
    Define an array of our drive motors,
    this generalises the motor control logic
-
+   
    NB this is *not* itself a struct
 */
 const int num_drive_motors = 3;
@@ -122,15 +135,6 @@ struct motor* driveset[num_drive_motors] = {
     &holo1,
     &holo2,
     &holo3
-};
-
-struct sensor {
-    int i2c_addr, last_val;
-};
-
-struct sensor encoders = {
-    .i2c_addr = 0x05,
-    .last_val = 0
 };
 
 // Rotary encoders
@@ -142,7 +146,6 @@ int positions[num_drive_motors] = {0};
 ***/
 void setup()
 {
-    self.status_led_pin = 13;
     pinMode(self.status_led_pin, OUTPUT);
     digitalWrite(self.status_led_pin, self.status_led);
 
@@ -163,58 +166,10 @@ void setup()
 
 void loop() 
 { 
-    /* 
-       The program will enter the loop and first use the switch statement to check which
-       function was set to be running last.
-    */
-
-    switch(function_running) {
-        //Non script function
-    case 0:
-        break;
-
-        //Left/Right short rotate and brake function are stopped after interval
-    case 1:
-        if (millis() > function_run_time + interval) {
-            all_stop();
-            function_running = 0;
-        }
-        break;
-    case 2:
-        if (millis() > function_run_time + interval) {
-            all_stop();
-            function_running = 0;
-        }
-        break;
-
-    default :
-        Serial.println("I shouldn't be here");
-    }
-
+    
     /* poll serial buffer & check against command set */
     sCmd.readSerial();
   
-    //Makes the sensor code run once per second. Change the int for different values
-    if(millis() > time_since_last_run + 15) {
-        switch(sensor_state) {
-        case(0):
-            readI2C(sensorAddr, ch0);
-            sensor_state = 1;
-            time_since_last_run = time_since_last_run + 15 ;
-            break;
-        case(1):
-            readI2C(sensorAddr, ch0);
-            sensor_state = 2;
-            time_since_last_run = time_since_last_run + 15;
-            break;
-        case(2):
-            //Serial.print("Channel 0 : ");
-            readI2C(sensorAddr, ch0);
-            sensor_state = 0;
-            time_since_last_run = millis();
-            break;
-        }
-    }
 
     /* Milestone 1 */
 
@@ -295,15 +250,12 @@ void init_commandset()
     sCmd.addCommand("M", run_motors);       // Runs wheel motors
     sCmd.addCommand("F", all_stop);      // Force stops all motors
 
-    sCmd.addCommand("HAVEBALL", have_ball);    //Checks if we have the ball
-    sCmd.addCommand("RESETHB", reset_have_ball); //Resets the intial value of the inital light sensor value
-
     /* Read from rotary encoders */
     sCmd.addCommand("GETE", getenc);
 
+    /* Misc commands */
     sCmd.addCommand("Recv", init_receive);
-
-    sCmd.addCommand("PXL", set_pixels);  // Set LED colour
+    sCmd.addCommand("Pixels ", set_pixels);  // Set LED colour
 
     sCmd.setDefaultHandler(unrecognized);      // Handler for command that isn't matched
 }
@@ -331,55 +283,6 @@ void getenc()
 {
     updateMotorPositions();
     printMotorPositions();
-}
-
-//Read data from light sensor method
-void readI2C(int portAddress, int channelAddr)
-{
-    switch(sensor_state) {
-    case (0):
-        Wire.beginTransmission(portAddress); 
-        Wire.write(byte(0x18)); // Write command to assert extended range mode - 0x1D
-        //delay(40);              // Write command to reset or return to standard range mode - 0x18
-        break;
-    case(1):
-        Wire.write(byte(0x03)); // Power-up state/Read command register
-        Wire.endTransmission(); // stop transmitting 
-        //delay(70);
-        break;
-    case(2):
-        Wire.beginTransmission(portAddress);             
-        Wire.write(byte(channelAddr)); // Read ADC channel 0 - 0x43 || Read ADC channel 1 - 0x83
-        Wire.endTransmission();        // stop transmitting
-      
-        Wire.requestFrom(portAddress, 1);
-        int byte_in;
-      
-        while(Wire.available())    // slave may send less than requested
-        { 
-            byte_in = Wire.read();    // receive a byte as character
-            Serial.println(byte_in);         // print the character
-        
-            if(initial_has_been_set != true) {
-                initial_light_value = byte_in;
-                initial_has_been_set = true;
-            }
-        
-            do_we_have_ball = (byte_in - initial_light_value) > 30;
-        }
-        break;
-    }
-  
-}
-
-void have_ball() 
-{
-    Serial.println(do_we_have_ball);
-}
-
-void reset_have_ball()
-{
-    initial_has_been_set = false; 
 }
 
 // Test Commands
@@ -420,17 +323,8 @@ void run_motors()
     Serial.println();
     #endif
 
-    if(allzero) {
-        if(!stop_flag){
-            brake_motors();
-            stop_flag = 1;
-        }
-    } else {
-        stop_flag = 0;
-    }
-    
-
-    function_running = 0;
+    if(allzero)
+        brake_motors();
     
     /* 
        We could have logic here to prevent stalling and high current
@@ -457,10 +351,6 @@ void run_motors()
 
 void brake_motors()
 {
-    function_running = 1;
-    interval = 100;
-    function_run_time = millis();
-    
     for(int i=0; i < num_drive_motors; i++){
         driveset[i]->power = 0;
         motorBrake(driveset[i]->port, 100);
