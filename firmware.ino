@@ -76,6 +76,16 @@ struct process {
     void (*callback)();
 };
 
+/*struct process test = {
+    .last_run = 0,
+    .interval = 1000,
+    .callback = &testfunc
+};*/
+
+struct process* tasks[] = {
+    //&test
+};
+
 
 /* 
    Sensor information, may be replaced
@@ -130,12 +140,12 @@ struct motor holo3 = {
    
    NB this is *not* itself a struct
 */
-const int num_drive_motors = 3;
-struct motor* driveset[num_drive_motors] = {
+struct motor* driveset[] = {
     &holo1,
     &holo2,
     &holo3
 };
+const int num_drive_motors = sizeof(driveset)/sizeof(struct motor*);
 
 // Rotary encoders
 int positions[num_drive_motors] = {0};
@@ -167,8 +177,17 @@ void setup()
 void loop() 
 { 
     
-    /* poll serial buffer & check against command set */
+    /* Poll serial buffer & check against command set */
     sCmd.readSerial();
+
+
+    /* Run through schedule */
+    for (int i=0; i<(sizeof(tasks)/sizeof(struct process*)); i++){
+        if (millis() >= (tasks[i]->last_run + tasks[i]->interval)){
+            tasks[i]->callback();
+            tasks[i]->last_run = millis();
+        }
+    }
   
 
     /* Milestone 1 */
@@ -406,8 +425,6 @@ void unrecognized(const char* command)
     /* NACK */
     Serial.println(F("N"));
 }
-
-
 
 /** MILESTONE 1 **/
 
