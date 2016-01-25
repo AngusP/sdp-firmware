@@ -25,7 +25,11 @@ def main():
     print out_v
     print "-----"
     
+<<<<<<< HEAD
     out_v = out_v.dot((1.0/largest)*255.0)
+=======
+    out_v = out_v.dot((1.0/abs(largest))*255.0)
+>>>>>>> refactoring
 
     print "G",
     for x in out_v:

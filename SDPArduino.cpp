@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include "State.h"
 
 
 #define MotorBoardI2CAddress 4
@@ -82,6 +83,14 @@ void motorBrake(int motorNum, int motorPower) { //Makes Motor motorNum brake at 
     Wire.beginTransmission(MotorBoardI2CAddress); //open I2C communation to Motor Board.
     Wire.write(sender,2);                    //send data. 
     byte fred = Wire.endTransmission();		//end I2C communcation.
+  }
+}
+
+void brake_motors()
+{
+  for(int i=0; i < motor_count; i++){
+    state.motors[i]->power = 0;
+    motorBrake(state.motors[i]->port, 100);
   }
 }
 
