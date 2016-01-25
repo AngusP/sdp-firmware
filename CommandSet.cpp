@@ -1,8 +1,5 @@
 #include "CommandSet.h"
-#include "State.h"
-#include "SerialCommand.h"
-#include "SDPArduino.h"
-#include "Adafruit_NeoPixel.h"
+
 
 // TODO move this elsewhere
 // ALL THE LEDEEES!

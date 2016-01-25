@@ -24,15 +24,15 @@ static struct motor motor_2 = {
 
 void State::setup()
 {
-    /*motors[motor_count] = {
-        &motor_1,
-        &motor_2,
-        &motor_3
-    };*/
     motors[0] = &motor_0;
     motors[1] = &motor_1;
     motors[2] = &motor_2;
 
     receiving = false;
     sending = false;
+
+    status_led_pin = 13;
+    status_led = false;
+    pinMode(status_led_pin, OUTPUT);
+    digitalWrite(status_led_pin, status_led);
 }

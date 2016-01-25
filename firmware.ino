@@ -77,16 +77,13 @@ void setup()
     state.setup();
     command_set.setup();
 
-    pinMode(state.status_led_pin, OUTPUT);
-    digitalWrite(state.status_led_pin, state.status_led);
-
     SDPsetup();
 
     Serial.begin(115200);
     Serial.println(F("STARTUP"));
 }
 
-void loop() 
+void loop()
 { 
     command_set.readSerial();
 
