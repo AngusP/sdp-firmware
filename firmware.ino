@@ -10,7 +10,7 @@
 #include "SDPArduino.h"
 #include <Wire.h>
 #include <Arduino.h>
-#include <Adafruit_NeoPixel.h>
+#include "Adafruit_NeoPixel.h"
 
 #define FW_DEBUG                             // Comment out to remove serial debug chatter
 
