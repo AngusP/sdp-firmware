@@ -23,7 +23,7 @@
 SerialCommand sCmd;                         // The SerialCommand object
 
 // ALL THE LEDEEES!
-#define NUM_PIXELS 5
+#define NUM_PIXELS 10
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, 5, NEO_GRB + NEO_KHZ800);
 // Ards are Num pixels, Pin and other stuff
 
@@ -112,6 +112,7 @@ struct process* tasks[] = {
 */
 struct motor {
     int port, power, direction;
+    long disp;
     float speed;
 };
 
@@ -119,18 +120,21 @@ struct motor holo1 = {
     .port         = 2,
     .power        = 0,
     .direction    = 1,
+    .disp         = 0,
     .speed        = 0.0
 };
 struct motor holo2 = {
     .port         = 5,
     .power        = 0,
     .direction    = 1,
+    .disp         = 0,
     .speed        = 0.0
 };
 struct motor holo3 = {
     .port         = 4,
     .power        = 0,
     .direction    = 1,
+    .disp         = 0,
     .speed        = 0.0
 };
 
@@ -184,7 +188,7 @@ void loop()
             tasks[i]->last_run = millis();
         }
     }
-  
+
 
     /* Milestone 1 */
 
@@ -272,12 +276,12 @@ void init_commandset()
 
 void pong()
 {
-    Serial.println("pong");
+    Serial.println(F("pong"));
 }
 
 void dump_commands()
 {
-    Serial.println("Valid input commands: (some have arguments)");
+    Serial.println(F("Valid input commands: (some have arguments)"));
     sCmd.dumpCommandSet();
 }
 
@@ -289,13 +293,21 @@ void poll_encoders()
     Wire.requestFrom(encoder_i2c_addr, num_drive_motors);
 
     for (int i = 0; i < num_drive_motors; i++) {
-        byte delta = (int8_t) Wire.read();
-        if (driveset[i]->power < 0) delta = 0xFF - delta;
+        byte delta = (byte) Wire.read();
+        if (driveset[i]->power < 0) {
+            delta = 0xFF - delta;
+            driveset[i]->disp -= delta;
+        } else {
+            driveset[i]->disp += delta;
+        }
         /*
           Update speed using the time now and the time we last checked
         */
+        
         driveset[i]->speed = (float) delta /
-            ((float) millis() - (float) update_speeds.last_run);
+            (((float) millis() - (float) update_speeds.last_run) / 1000.0);
+
+        if (driveset[i]->power < 0) driveset[i]->speed *= -1;
     }
 }
 
@@ -305,7 +317,7 @@ void print_speeds()
         Serial.print(i);
         Serial.print(F(": "));
         Serial.print(driveset[i]->speed);
-        Serial.print(F("stops/s "));
+        Serial.print(F(" "));
     }
     Serial.println();
 }
