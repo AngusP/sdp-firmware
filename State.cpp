@@ -33,7 +33,7 @@ void State::setup()
     sending = false;
 
     status_led_pin = 13;
-    status_led = false;
+    status_led = LOW;
     pinMode(status_led_pin, OUTPUT);
     digitalWrite(status_led_pin, status_led);
 }

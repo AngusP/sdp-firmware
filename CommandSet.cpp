@@ -1,4 +1,5 @@
 #include "CommandSet.h"
+#include "Processes.h"
 #define FW_DEBUG
 
 // TODO move this elsewhere
@@ -50,6 +51,8 @@ void CommandSet::setup()
     sCmd.addCommand("Recv", this->receive);       // Milestone 1
     sCmd.addCommand("Pixels", this->pixels);      // Set LED colour
 
+    sCmd.addCommand("kick", this->kick);          // Kick
+
     sCmd.setDefaultHandler(this->unrecognized);   // Handler for command that isn't matched
 
 
@@ -64,16 +67,20 @@ void CommandSet::readSerial()
     sCmd.readSerial();
 }
 
-/************************************* Setup callbacks for SerialCommand commands *************************************/
+/*
+ * This gets set as the default input handler, and gets called when no other command matches.
+ */
+void CommandSet::unrecognized(const char* command)
+{
+    /* NACK */
+    Serial.println(F("N"));
+}
+
+/***  SETUP CALLBACKS FOR SERIAL COMMANDS  ***********************************************************/
 
 void CommandSet::led()
 {
-    state.status_led = !state.status_led;
-    if (state.status_led){
-        digitalWrite(state.status_led_pin, LOW);
-    } else {
-        digitalWrite(state.status_led_pin, HIGH);
-    }
+    digitalWrite(state.status_led_pin, state.status_led = state.status_led ? LOW : HIGH);
 }
 
 void CommandSet::ping()
@@ -87,7 +94,7 @@ void CommandSet::help()
     sCmd.dumpCommandSet();
 }
 
-/****************************************** Movement with argument commands *******************************************/
+/***  LOW LEVEL MOTOR COMMAND  ***********************************************************************/
 
 void CommandSet::move()
 {
@@ -133,7 +140,7 @@ void CommandSet::go()
 
 }
 
-/********************************************* Read from rotary encoders **********************************************/
+/***  READ ROTARY ENCODERS  **************************************************************************/
 
 void CommandSet::speeds()
 {
@@ -146,7 +153,7 @@ void CommandSet::speeds()
     Serial.println();
 }
 
-/*************************************************** Misc commands ****************************************************/
+/***  MISC COMMANDS  *********************************************************************************/
 
 /*
   Change state to waiting for up-to 250 bytes from controller
@@ -160,8 +167,8 @@ void CommandSet::receive()
     char* arg2 = sCmd.next();
     bool die = false;
 
-    arg1 == NULL ? die = true : state.send_frequency = atoi(arg1);
-    arg2 == NULL ? die = true : state.num_bytes      = atoi(arg2);
+    arg1 == NULL ? die = true : (state.send_frequency = atoi(arg1));
+    arg2 == NULL ? die = true : (state.num_bytes      = atoi(arg2));
 
     if (die) {
         return CommandSet::unrecognized(NULL);
@@ -170,13 +177,15 @@ void CommandSet::receive()
     state.num_bytes = state.num_bytes > 250 ? 250 : state.num_bytes;
 
     state.receiving = true;
+    processes.change(MILESTONE_1_PROCESS, (unsigned long) state.send_frequency);
+    processes.enable(MILESTONE_1_PROCESS);
 }
 
 void CommandSet::pixels()
 {
-    byte red   = atoi(sCmd.next());
-    byte green = atoi(sCmd.next());
-    byte blue  = atoi(sCmd.next());
+    byte red   = (byte) atoi(sCmd.next());
+    byte green = (byte) atoi(sCmd.next());
+    byte blue  = (byte) atoi(sCmd.next());
 
     #ifdef FW_DEBUG
     Serial.print(F("Set pixel colour to "));
@@ -185,17 +194,35 @@ void CommandSet::pixels()
     Serial.println(blue,HEX);
     #endif
 
-    for (int i=0; i<NUM_PIXELS; i++) {
+    for (uint16_t i = 0; i < NUM_PIXELS; i++) {
         strip.setPixelColor(i, red, green, blue);
     }
     strip.show();
 }
 
-/*
- * This gets set as the default input handler, and gets called when no other command matches.
- */
-void CommandSet::unrecognized(const char* command)
+
+
+void CommandSet::kick()
 {
-    /* NACK */
-    Serial.println(F("N"));
+    const int port          = 0;
+    int motor_power         =            atoi(sCmd.next());
+    unsigned int duration   = (unsigned) atoi(sCmd.next());
+
+    #ifdef FW_DEBUG
+    Serial.print(F("Trying to kick at "));
+    Serial.print(motor_power);
+    Serial.print(F(" power for "));
+    Serial.print(duration);
+    Serial.println(" milliseconds. Goodbye.");
+    #endif
+
+    if(motor_power < 0){
+        motorBackward(port, abs(motor_power));
+    } else {
+        motorForward(port,  abs(motor_power));
+    }
+
+    delay(duration);
+
+    motorStop(port);
 }

@@ -22,6 +22,7 @@ class CommandSet
         static void speeds();
         static void receive();
         static void pixels();
+        static void kick();
         static void unrecognized(const char* command);
 };
 
