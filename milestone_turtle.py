@@ -35,11 +35,11 @@ def main():
     if disp_x != 0:
         disp_rot = np.arctan(disp_y / disp_x) * (180.0 / np.pi)
     else:
-        # tan undefined for 90deg... grrrr
+        # tan undefined for +-90deg... grrrr
         disp_rot = (disp_y / abs(disp_y)) * 90
 
     if disp_y == 0 and disp_x < 0:
-        disp_rot = -180.0
+        disp_rot = 180.0
 
     rotation -= disp_rot
         
