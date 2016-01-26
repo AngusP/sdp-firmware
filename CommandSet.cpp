@@ -51,6 +51,8 @@ void CommandSet::setup()
     sCmd.addCommand("Recv", this->receive);       // Milestone 1
     sCmd.addCommand("Pixels", this->pixels);      // Set LED colour
 
+    sCmd.addCommand("kick", this->kick);          // Kick
+
     sCmd.setDefaultHandler(this->unrecognized);   // Handler for command that isn't matched
 
 
@@ -192,8 +194,35 @@ void CommandSet::pixels()
     Serial.println(blue,HEX);
     #endif
 
-    for (uint16_t i=0; i<NUM_PIXELS; i++) {
+    for (uint16_t i = 0; i < NUM_PIXELS; i++) {
         strip.setPixelColor(i, red, green, blue);
     }
     strip.show();
+}
+
+
+
+void CommandSet::kick()
+{
+    const int port          = 0;
+    int motor_power         =            atoi(sCmd.next());
+    unsigned int duration   = (unsigned) atoi(sCmd.next());
+
+    #ifdef FW_DEBUG
+    Serial.print(F("Trying to kick at "));
+    Serial.print(motor_power);
+    Serial.print(F(" power for "));
+    Serial.print(duration);
+    Serial.println(" milliseconds. Goodbye.");
+    #endif
+
+    if(motor_power < 0){
+        motorBackward(port, abs(motor_power));
+    } else {
+        motorForward(port,  abs(motor_power));
+    }
+
+    delay(duration);
+
+    motorStop(port);
 }
