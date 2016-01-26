@@ -68,9 +68,7 @@ void CommandSet::readSerial()
 
 void CommandSet::led()
 {
-    state.status_led = !state.status_led;
-
-    digitalWrite(state.status_led_pin, state.status_led ? LOW : HIGH);
+    digitalWrite(state.status_led_pin, state.status_led = state.status_led ? LOW : HIGH);
 }
 
 void CommandSet::ping()

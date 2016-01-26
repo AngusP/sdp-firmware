@@ -16,7 +16,7 @@
 */
 struct process {
     unsigned long last_run, interval;
-    bool is_active;
+    bool enabled;
     void (*callback)();
 };
 
@@ -28,9 +28,9 @@ class Processes
     public:
         static void setup();
 
-        static void run_processes();
-        static void deactivate_process(size_t process_id);
-        static void activate_process(size_t process_id);
+        static void run();
+        static void enable_process(size_t process_id);
+        static void disable_process(size_t process_id);
 
         static void change_process(size_t process_id, void (*callback)(), unsigned long interval);
         static void change_process(size_t process_id, void (*callback)());

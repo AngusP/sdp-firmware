@@ -40,5 +40,5 @@ void loop()
     command_set.readSerial();
 
     /* Run through schedule */
-    processes.run_processes();
+    processes.run();
 }

@@ -18,36 +18,36 @@ void Processes::setup()
     *(processes[HEARTBEAT_PROCESS]) = (struct process) {
         .last_run   = 0,
         .interval   = 999,
-        .is_active  = true,
+        .enabled    = true,
         .callback   = &Processes::heartbeat
     };
 
     *(processes[POLL_ENCODERS_PROCESS]) = (struct process) {
         .last_run   = 0,
         .interval   = 50,
-        .is_active  = true,
+        .enabled    = true,
         .callback   = &Processes::poll_encoders
     };
 
     *(processes[CHECK_MOTORS_PROCESS]) = (struct process) {
         .last_run   = 0,
         .interval   = 100,
-        .is_active  = false,
+        .enabled    = false,
         .callback   = &Processes::check_motors
     };
 
     *(processes[MILESTONE_1_PROCESS]) = (struct process) {
         .last_run   = 0,
         .interval   = 2, // TODO is this a reasonable number?
-        .is_active  = true,
+        .enabled    = true,
         .callback   = &Processes::milestone_1
     };
 }
 
-void Processes::run_processes()
+void Processes::run()
 {
     for (size_t i = 0; i < PROCESS_COUNT; i++) {
-        if (processes[i]->is_active && millis() >= (processes[i]->last_run + processes[i]->interval)){
+        if (processes[i]->enabled && millis() >= (processes[i]->last_run + processes[i]->interval)){
             processes[i]->callback();
             processes[i]->last_run = millis();
         }
@@ -56,21 +56,21 @@ void Processes::run_processes()
 
 /******************************************** Process management routines *********************************************/
 
-void Processes::deactivate_process(size_t process_id)
+void Processes::disable_process(size_t process_id)
 {
-    processes[process_id]->is_active = false;
+    processes[process_id]->enabled = false;
 }
 
-void Processes::activate_process(size_t process_id)
+void Processes::enable_process(size_t process_id)
 {
-    processes[process_id]->is_active = true;
+    processes[process_id]->enabled = true;
 }
 
 void Processes::change_process(size_t process_id, void (*callback)(), unsigned long interval)
 {
     struct process* process = processes[process_id];
-    process->callback = callback;
-    process->interval = interval;
+    change_process(process_id, callback);
+    change_process(process_id, interval);
 }
 
 void Processes::change_process(size_t process_id, void (*callback)())
