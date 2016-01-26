@@ -69,11 +69,8 @@ void CommandSet::readSerial()
 void CommandSet::led()
 {
     state.status_led = !state.status_led;
-    if (state.status_led){
-        digitalWrite(state.status_led_pin, LOW);
-    } else {
-        digitalWrite(state.status_led_pin, HIGH);
-    }
+
+    digitalWrite(state.status_led_pin, state.status_led ? LOW : HIGH);
 }
 
 void CommandSet::ping()
@@ -160,8 +157,8 @@ void CommandSet::receive()
     char* arg2 = sCmd.next();
     bool die = false;
 
-    arg1 == NULL ? die = true : state.send_frequency = atoi(arg1);
-    arg2 == NULL ? die = true : state.num_bytes      = atoi(arg2);
+    arg1 == NULL ? die = true : (state.send_frequency = atoi(arg1));
+    arg2 == NULL ? die = true : (state.num_bytes      = atoi(arg2));
 
     if (die) {
         return CommandSet::unrecognized(NULL);
@@ -174,9 +171,9 @@ void CommandSet::receive()
 
 void CommandSet::pixels()
 {
-    byte red   = atoi(sCmd.next());
-    byte green = atoi(sCmd.next());
-    byte blue  = atoi(sCmd.next());
+    byte red   = (byte) atoi(sCmd.next());
+    byte green = (byte) atoi(sCmd.next());
+    byte blue  = (byte) atoi(sCmd.next());
 
     #ifdef FW_DEBUG
     Serial.print(F("Set pixel colour to "));
@@ -185,7 +182,7 @@ void CommandSet::pixels()
     Serial.println(blue,HEX);
     #endif
 
-    for (int i=0; i<NUM_PIXELS; i++) {
+    for (uint16_t i=0; i<NUM_PIXELS; i++) {
         strip.setPixelColor(i, red, green, blue);
     }
     strip.show();

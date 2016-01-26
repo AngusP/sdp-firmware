@@ -22,7 +22,8 @@ class State
     public:
         void setup();
 
-        int battery, status_led, status_led_pin;
+        int battery, status_led;
+        uint8_t status_led_pin;
         float heading;
 
         struct motor* motors[motor_count];
