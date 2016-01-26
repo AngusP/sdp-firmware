@@ -25,14 +25,14 @@ Processes processes;
 ***/
 void setup()
 {
+    Serial.begin(115200);
+    Serial.println(F("STARTUP"));
+
     state.setup();
     command_set.setup();
     processes.setup();
 
     SDPsetup();
-
-    Serial.begin(115200);
-    Serial.println(F("STARTUP"));
 }
 
 void loop()

@@ -1,4 +1,5 @@
 
+#define FW_DEBUG // Comment out to remove serial debug chatter
 
 #include "Processes.h"
 #include "CommandSet.h"
@@ -7,41 +8,49 @@
 #include <Wire.h>
 #include "addresses.h"
 
+// Declaring these structs here as an alternative to malloc
+
+/*
+ * Toggle LED ~1 time per second 999 so it is unlikely to coincide
+ * with things that actually have to happen once per second
+ */
+static struct process heartbeat_process = {
+    .last_run   = 0,
+    .interval   = 999,
+    .enabled    = true,
+    .callback   = &Processes::heartbeat
+};
+
+static struct process poll_encoders_process = {
+    .last_run   = 0,
+    .interval   = 50,
+    .enabled    = true,
+    .callback   = &Processes::poll_encoders
+};
+
+static struct process check_motors_process = {
+    .last_run   = 0,
+    .interval   = 100,
+    .enabled    = false,
+    .callback   = &Processes::check_motors
+};
+
+static struct process milestone_1_process = {
+    .last_run   = 0,
+    .interval   = 50, // TODO is this a reasonable number?
+    .enabled    = true,
+    .callback   = &Processes::milestone_1
+};
+
+
 struct process* Processes::processes[PROCESS_COUNT];
 
 void Processes::setup()
 {
-    /*
-     * Toggle LED ~1 time per second 999 so it is unlikely to coincide
-     * with things that actually have to happen once per second
-     */
-    *(processes[HEARTBEAT_PROCESS]) = (struct process) {
-        .last_run   = 0,
-        .interval   = 999,
-        .enabled    = true,
-        .callback   = &Processes::heartbeat
-    };
-
-    *(processes[POLL_ENCODERS_PROCESS]) = (struct process) {
-        .last_run   = 0,
-        .interval   = 50,
-        .enabled    = true,
-        .callback   = &Processes::poll_encoders
-    };
-
-    *(processes[CHECK_MOTORS_PROCESS]) = (struct process) {
-        .last_run   = 0,
-        .interval   = 100,
-        .enabled    = false,
-        .callback   = &Processes::check_motors
-    };
-
-    *(processes[MILESTONE_1_PROCESS]) = (struct process) {
-        .last_run   = 0,
-        .interval   = 2, // TODO is this a reasonable number?
-        .enabled    = true,
-        .callback   = &Processes::milestone_1
-    };
+    processes[HEARTBEAT_PROCESS] = &heartbeat_process;
+    processes[POLL_ENCODERS_PROCESS] = &poll_encoders_process;
+    processes[CHECK_MOTORS_PROCESS] = &check_motors_process;
+    processes[MILESTONE_1_PROCESS] = &milestone_1_process;
 }
 
 void Processes::run()

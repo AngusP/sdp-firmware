@@ -26,7 +26,7 @@ class Processes
 {
 
     public:
-        static void setup();
+        void setup();
 
         static void run();
         static void enable_process(size_t process_id);
