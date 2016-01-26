@@ -37,7 +37,7 @@ def main():
 
 if __name__ == '__main__':
     try:
-        print "Holonomic Matrix calculator\n"
+        print "Holonomic Matrix calculator\n(C-d exits)\n"
         while True:
             main()
     except EOFError:

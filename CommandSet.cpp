@@ -1,5 +1,5 @@
 #include "CommandSet.h"
-
+#define FW_DEBUG
 
 // TODO move this elsewhere
 // ALL THE LEDEEES!

@@ -1,4 +1,5 @@
 #include "State.h"
+#define FW_DEBUG
 
 static struct motor motor_0 = {
     .port         = 2,

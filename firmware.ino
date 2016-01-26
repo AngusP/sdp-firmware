@@ -6,13 +6,13 @@
 
 ***/
 
+#define FW_DEBUG                             // Comment out to remove serial debug chatter
+
 #include "CommandSet.h"
 #include "State.h"
 #include "SDPArduino.h"
 #include <Wire.h>
 #include <Arduino.h>
-
-#define FW_DEBUG                             // Comment out to remove serial debug chatter
 
 #define sensorAddr 0x39  // Sensor physical address on the power board - 0x39
 #define ch0        0x43  // Read ADC for channel 0 - 0x43
