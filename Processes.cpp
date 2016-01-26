@@ -29,7 +29,7 @@ static struct process poll_encoders_process = {
 
 static struct process check_motors_process = {
     .last_run   = 0,
-    .interval   = 100,
+    .interval   = 50,
     .enabled    = false,
     .callback   = &Processes::check_motors
 };
@@ -42,22 +42,22 @@ static struct process milestone_1_process = {
 };
 
 
-struct process* Processes::processes[PROCESS_COUNT];
+struct process* Processes::collection[PROCESS_COUNT];
 
 void Processes::setup()
 {
-    processes[HEARTBEAT_PROCESS]     = &heartbeat_process;
-    processes[POLL_ENCODERS_PROCESS] = &poll_encoders_process;
-    processes[CHECK_MOTORS_PROCESS]  = &check_motors_process;
-    processes[MILESTONE_1_PROCESS]   = &milestone_1_process;
+    collection[HEARTBEAT_PROCESS]     = &heartbeat_process;
+    collection[POLL_ENCODERS_PROCESS] = &poll_encoders_process;
+    collection[CHECK_MOTORS_PROCESS]  = &check_motors_process;
+    collection[MILESTONE_1_PROCESS]   = &milestone_1_process;
 }
 
 void Processes::run()
 {
     for (size_t i = 0; i < PROCESS_COUNT; i++) {
-        if (processes[i]->enabled && millis() >= (processes[i]->last_run + processes[i]->interval)){
-            processes[i]->callback();
-            processes[i]->last_run = millis();
+        if (collection[i]->enabled && millis() >= (collection[i]->last_run + collection[i]->interval)){
+            collection[i]->callback();
+            collection[i]->last_run = millis();
         }
     }
 }
@@ -68,12 +68,12 @@ void Processes::run()
 
 void Processes::disable(size_t process_id)
 {
-    processes[process_id]->enabled = false;
+    collection[process_id]->enabled = false;
 }
 
 void Processes::enable(size_t process_id)
 {
-    processes[process_id]->enabled = true;
+    collection[process_id]->enabled = true;
 }
 
 void Processes::change(size_t process_id, void (*callback)(), unsigned long interval)
@@ -84,12 +84,12 @@ void Processes::change(size_t process_id, void (*callback)(), unsigned long inte
 
 void Processes::change(size_t process_id, void (*callback)())
 {
-    processes[process_id]->callback = callback;
+    collection[process_id]->callback = callback;
 }
 
 void Processes::change(size_t process_id, unsigned long interval)
 {
-    processes[process_id]->interval = interval;
+    collection[process_id]->interval = interval;
 }
 
 
@@ -119,7 +119,7 @@ void Processes::poll_encoders()
 
         state.motors[i]->speed = (float) delta /
                                  (((float) millis() -
-                                   (float) processes[POLL_ENCODERS_PROCESS]->last_run) / 1000.0);
+                                   (float) collection[POLL_ENCODERS_PROCESS]->last_run) / 1000.0);
 
         if (state.motors[i]->power < 0) {
             state.motors[i]->speed *= -1;
@@ -194,3 +194,19 @@ void Processes::milestone_1()
     }
 }
 
+
+void Processes::check_rotation()
+{
+    long current_delta = 0;
+
+    for (size_t i = 0; i < motor_count; i++) {
+        current_delta += state.motors[i]->disp - state.initial_displacement[i];
+    }
+
+    current_delta /= motor_count;
+
+    if (current_delta >= state.rotation_delta) {
+        motorAllStop();
+        processes.disable(CHECK_MOTORS_PROCESS);
+    }
+}

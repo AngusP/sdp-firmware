@@ -53,6 +53,8 @@ void CommandSet::setup()
 
     sCmd.addCommand("kick", this->kick);          // Kick
 
+    sCmd.addCommand("rotate", this->rotate);      // Rotate
+
     sCmd.setDefaultHandler(this->unrecognized);   // Handler for command that isn't matched
 
 
@@ -225,4 +227,31 @@ void CommandSet::kick()
     delay(duration);
 
     motorStop(port);
+}
+
+
+void CommandSet::rotate()
+{
+    const int motor_power   = atoi(sCmd.next());
+    const long delta        = atoi(sCmd.next());
+
+    #ifdef FW_DEBUG
+    Serial.print(F("Going to rotate at "));
+    Serial.print(motor_power);
+    Serial.print(F(" power until we rotate "));
+    Serial.print(delta);
+    Serial.println(" units.");
+    #endif
+
+    for (size_t i=0; i < motor_count; i++){
+        state.motors[i]->power = motor_power;
+        state.initial_displacement[i] = state.motors[i]->disp;
+    }
+
+    state.rotation_delta = delta;
+
+    processes.change(CHECK_MOTORS_PROCESS, processes.check_rotation, 60);
+    processes.enable(CHECK_MOTORS_PROCESS);
+
+    write_powers();
 }

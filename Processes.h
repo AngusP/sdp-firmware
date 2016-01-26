@@ -39,9 +39,10 @@ class Processes
         static void poll_encoders();
         static void check_motors();
         static void milestone_1();
+        static void check_rotation();
 
     private:
-        static struct process* processes[PROCESS_COUNT];
+        static struct process* collection[PROCESS_COUNT];
 };
 
 extern Processes processes;

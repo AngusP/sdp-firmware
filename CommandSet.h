@@ -23,6 +23,7 @@ class CommandSet
         static void receive();
         static void pixels();
         static void kick();
+        static void rotate();
         static void unrecognized(const char* command);
 };
 

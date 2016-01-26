@@ -35,6 +35,10 @@ class State
         bool sending;
         unsigned long last_send;
         long time_period;
+
+        // Rotation stuff
+        long initial_displacement[motor_count];
+        long rotation_delta;
 };
 
 extern State state;
