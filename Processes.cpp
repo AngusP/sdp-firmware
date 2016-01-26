@@ -66,29 +66,28 @@ void Processes::run()
 /***  PROCESS MANAGEMENT ROUTINES  *******************************************************************/
 
 
-void Processes::disable_process(size_t process_id)
+void Processes::disable(size_t process_id)
 {
     processes[process_id]->enabled = false;
 }
 
-void Processes::enable_process(size_t process_id)
+void Processes::enable(size_t process_id)
 {
     processes[process_id]->enabled = true;
 }
 
-void Processes::change_process(size_t process_id, void (*callback)(), unsigned long interval)
+void Processes::change(size_t process_id, void (*callback)(), unsigned long interval)
 {
-    struct process* process = processes[process_id];
-    change_process(process_id, callback);
-    change_process(process_id, interval);
+    change(process_id, callback);
+    change(process_id, interval);
 }
 
-void Processes::change_process(size_t process_id, void (*callback)())
+void Processes::change(size_t process_id, void (*callback)())
 {
     processes[process_id]->callback = callback;
 }
 
-void Processes::change_process(size_t process_id, unsigned long interval)
+void Processes::change(size_t process_id, unsigned long interval)
 {
     processes[process_id]->interval = interval;
 }
@@ -188,7 +187,7 @@ void Processes::milestone_1()
             Serial.println(F(" bytes over the i2c bus"));
             #endif
 
-            disable_process(MILESTONE_1_PROCESS);
+            disable(MILESTONE_1_PROCESS);
         }
         
         state.last_send = millis();

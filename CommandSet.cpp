@@ -175,8 +175,8 @@ void CommandSet::receive()
     state.num_bytes = state.num_bytes > 250 ? 250 : state.num_bytes;
 
     state.receiving = true;
-    processes.change_process(MILESTONE_1_PROCESS, state.send_frequency);
-    processes.enable_process(MILESTONE_1_PROCESS);
+    processes.change(MILESTONE_1_PROCESS, (unsigned long) state.send_frequency);
+    processes.enable(MILESTONE_1_PROCESS);
 }
 
 void CommandSet::pixels()

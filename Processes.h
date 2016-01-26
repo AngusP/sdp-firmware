@@ -28,12 +28,12 @@ class Processes
         void setup();
 
         static void run();
-        static void enable_process(size_t process_id);
-        static void disable_process(size_t process_id);
+        static void enable(size_t process_id);
+        static void disable(size_t process_id);
 
-        static void change_process(size_t process_id, void (*callback)(), unsigned long interval);
-        static void change_process(size_t process_id, void (*callback)());
-        static void change_process(size_t process_id, unsigned long interval);
+        static void change(size_t process_id, void (*callback)(), unsigned long interval);
+        static void change(size_t process_id, void (*callback)());
+        static void change(size_t process_id, unsigned long interval);
 
         static void heartbeat();
         static void poll_encoders();
