@@ -20,9 +20,9 @@ def main():
         raise Exception("Couldn't open port " + which_port)
     
     print "Sending move command... Hit enter to stop"
-    port.write("M 250 -255 0\n")
+    #port.write("M 250 -255 0\n")
     #port.write("M -83 -83 -83\n")
-    #port.write("M 84 84 84\n")
+    port.write("M 84 84 84\n")
     started = datetime.datetime.now()
     block = raw_input("> ")
     port.write("M 0 0 0\n")
