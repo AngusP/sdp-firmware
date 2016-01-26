@@ -1,4 +1,5 @@
 #include "CommandSet.h"
+#include "Processes.h"
 #define FW_DEBUG
 
 // TODO move this elsewhere
@@ -64,7 +65,16 @@ void CommandSet::readSerial()
     sCmd.readSerial();
 }
 
-/************************************* Setup callbacks for SerialCommand commands *************************************/
+/*
+ * This gets set as the default input handler, and gets called when no other command matches.
+ */
+void CommandSet::unrecognized(const char* command)
+{
+    /* NACK */
+    Serial.println(F("N"));
+}
+
+/***  SETUP CALLBACKS FOR SERIAL COMMANDS  ***********************************************************/
 
 void CommandSet::led()
 {
@@ -82,7 +92,7 @@ void CommandSet::help()
     sCmd.dumpCommandSet();
 }
 
-/****************************************** Movement with argument commands *******************************************/
+/***  LOW LEVEL MOTOR COMMAND  ***********************************************************************/
 
 void CommandSet::move()
 {
@@ -128,7 +138,7 @@ void CommandSet::go()
 
 }
 
-/********************************************* Read from rotary encoders **********************************************/
+/***  READ ROTARY ENCODERS  **************************************************************************/
 
 void CommandSet::speeds()
 {
@@ -141,7 +151,7 @@ void CommandSet::speeds()
     Serial.println();
 }
 
-/*************************************************** Misc commands ****************************************************/
+/***  MISC COMMANDS  *********************************************************************************/
 
 /*
   Change state to waiting for up-to 250 bytes from controller
@@ -165,6 +175,8 @@ void CommandSet::receive()
     state.num_bytes = state.num_bytes > 250 ? 250 : state.num_bytes;
 
     state.receiving = true;
+    processes.change_process(MILESTONE_1_PROCESS, state.send_frequency);
+    processes.enable_process(MILESTONE_1_PROCESS);
 }
 
 void CommandSet::pixels()
@@ -184,13 +196,4 @@ void CommandSet::pixels()
         strip.setPixelColor(i, red, green, blue);
     }
     strip.show();
-}
-
-/*
- * This gets set as the default input handler, and gets called when no other command matches.
- */
-void CommandSet::unrecognized(const char* command)
-{
-    /* NACK */
-    Serial.println(F("N"));
 }

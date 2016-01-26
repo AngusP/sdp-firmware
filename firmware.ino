@@ -8,12 +8,15 @@
 
 #define FW_DEBUG // Comment out to remove serial debug chatter
 
+
+#include <Wire.h>
+#include <Arduino.h>
+#include <alloca.h>
+
 #include "CommandSet.h"
 #include "State.h"
 #include "Processes.h"
 #include "SDPArduino.h"
-#include <Wire.h>
-#include <Arduino.h>
 #include "addresses.h"
 
 State state;
@@ -26,19 +29,20 @@ Processes processes;
 void setup()
 {
     Serial.begin(115200);
-    Serial.println(F("STARTUP"));
 
     state.setup();
     command_set.setup();
     processes.setup();
-
     SDPsetup();
+
+    delay(500);
+    Serial.println(F("STARTUP"));
 }
 
 void loop()
-{ 
+{
+    /* async */
     command_set.readSerial();
-
-    /* Run through schedule */
+    /* sync */
     processes.run();
 }

@@ -3,17 +3,16 @@
 
 #include <Arduino.h>
 
-
+#define PROCESS_COUNT 4
 #define HEARTBEAT_PROCESS 0
 #define POLL_ENCODERS_PROCESS 1
 #define CHECK_MOTORS_PROCESS 2
 #define MILESTONE_1_PROCESS 3
 
-#define PROCESS_COUNT 4
-
 /*
-   Process structure, for defining a clock synchronous process
-*/
+ *  Process structure, for defining a clock synchronous process
+ */
+
 struct process {
     unsigned long last_run, interval;
     bool enabled;

@@ -1,19 +1,18 @@
 
-#define FW_DEBUG // Comment out to remove serial debug chatter
+#define FW_DEBUG
+
+#include <Arduino.h>
+#include <Wire.h>
 
 #include "Processes.h"
 #include "CommandSet.h"
 #include "State.h"
-#include <Arduino.h>
-#include <Wire.h>
 #include "addresses.h"
 
-// Declaring these structs here as an alternative to malloc
-
 /*
- * Toggle LED ~1 time per second 999 so it is unlikely to coincide
- * with things that actually have to happen once per second
- */
+  Toggle LED ~1 time per second; 999 so it is unlikely to coincide
+  with things that actually have to happen once per second
+*/
 static struct process heartbeat_process = {
     .last_run   = 0,
     .interval   = 999,
@@ -37,8 +36,8 @@ static struct process check_motors_process = {
 
 static struct process milestone_1_process = {
     .last_run   = 0,
-    .interval   = 50, // TODO is this a reasonable number?
-    .enabled    = true,
+    .interval   = 1000,
+    .enabled    = false,
     .callback   = &Processes::milestone_1
 };
 
@@ -47,10 +46,10 @@ struct process* Processes::processes[PROCESS_COUNT];
 
 void Processes::setup()
 {
-    processes[HEARTBEAT_PROCESS] = &heartbeat_process;
+    processes[HEARTBEAT_PROCESS]     = &heartbeat_process;
     processes[POLL_ENCODERS_PROCESS] = &poll_encoders_process;
-    processes[CHECK_MOTORS_PROCESS] = &check_motors_process;
-    processes[MILESTONE_1_PROCESS] = &milestone_1_process;
+    processes[CHECK_MOTORS_PROCESS]  = &check_motors_process;
+    processes[MILESTONE_1_PROCESS]   = &milestone_1_process;
 }
 
 void Processes::run()
@@ -63,7 +62,9 @@ void Processes::run()
     }
 }
 
-/******************************************** Process management routines *********************************************/
+
+/***  PROCESS MANAGEMENT ROUTINES  *******************************************************************/
+
 
 void Processes::disable_process(size_t process_id)
 {
@@ -93,7 +94,7 @@ void Processes::change_process(size_t process_id, unsigned long interval)
 }
 
 
-/********************************************** Actual process handlers ***********************************************/
+/***  ACTAUAL PROCESS HANDLERS  **********************************************************************/
 
 void Processes::heartbeat()
 {
@@ -118,7 +119,8 @@ void Processes::poll_encoders()
         */
 
         state.motors[i]->speed = (float) delta /
-                                 (((float) millis() - (float) processes[POLL_ENCODERS_PROCESS]->last_run) / 1000.0);
+                                 (((float) millis() -
+                                   (float) processes[POLL_ENCODERS_PROCESS]->last_run) / 1000.0);
 
         if (state.motors[i]->power < 0) {
             state.motors[i]->speed *= -1;
@@ -151,6 +153,7 @@ void Processes::milestone_1()
                 #endif
             }
         }
+        
         state.sending = true;
         state.receiving = false;
         state.sending_index = 0;
@@ -168,12 +171,14 @@ void Processes::milestone_1()
     }
 
     // Ewww.
-    if (state.sending && (millis() >= (state.last_send + state.time_period))){
+    if (state.sending && (millis() >= (state.last_send + state.time_period))) {
+
         if (state.sending_index < state.num_bytes) {
-            // 0x45 is the address according to the milestone page
+            // 0x45 (0d69, hehe) is the address according to the milestone page
             Wire.beginTransmission(0x45);
             Wire.write(state.receive_bytes[state.sending_index++]);
             Wire.endTransmission();
+
         } else {
             state.sending = false;
 
@@ -182,7 +187,11 @@ void Processes::milestone_1()
             Serial.print(state.num_bytes);
             Serial.println(F(" bytes over the i2c bus"));
             #endif
+
+            disable_process(MILESTONE_1_PROCESS);
         }
+        
         state.last_send = millis();
     }
 }
+
