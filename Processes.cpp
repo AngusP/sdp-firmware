@@ -108,7 +108,9 @@ void Processes::poll_encoders()
     for (int i = 0; i < motor_count; i++) {
         byte delta = (byte) Wire.read();
         if (state.motors[i]->power < 0) {
-            delta = 0xFF - delta;
+            if (delta) {
+                delta = 0xFF - delta;
+            }
             state.motors[i]->disp -= delta;
         } else {
             state.motors[i]->disp += delta;
@@ -200,12 +202,15 @@ void Processes::check_rotation()
     long current_delta = 0;
 
     for (size_t i = 0; i < motor_count; i++) {
-        current_delta += state.motors[i]->disp - state.initial_displacement[i];
+        current_delta += abs(state.motors[i]->disp - state.initial_displacement[i]);
     }
 
     current_delta /= motor_count;
 
     if (current_delta >= state.rotation_delta) {
+        #ifdef FW_DEBUG
+        Serial.println("Ending rotation");
+        #endif
         motorAllStop();
         processes.disable(CHECK_MOTORS_PROCESS);
     }
