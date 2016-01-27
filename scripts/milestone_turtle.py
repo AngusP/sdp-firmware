@@ -7,7 +7,7 @@ from get_rotation_delta import get_rotation_delta
 
 fwd = "M 253 -255 0\n"
 
-# Moves forward at 29 cm/s
+# Moves forward
 move_speed = 33.13
 move_spool = 0.2
 
@@ -91,7 +91,7 @@ def main():
             # Clockwise
             port.write("rotate -100 "+ str(get_rotation_delta(disp_rot)) +"\n")
 
-        time.sleep(disp_rot / 80.0) # magic constant wooo
+        time.sleep(abs(disp_rot) / 80.0) # magic constant wooo
         time.sleep(1)
 
     # forward
@@ -116,3 +116,6 @@ def main():
 if __name__ == '__main__':
     print "Milestone 1 turtle motion c&c\n"
     main()
+
+    #0.71
+    
