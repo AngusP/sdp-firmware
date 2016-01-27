@@ -206,7 +206,7 @@ void CommandSet::pixels()
 
 void CommandSet::kick()
 {
-    const int port          = 0;
+    const int port          = 1;
     int motor_power         =            atoi(sCmd.next());
     unsigned int duration   = (unsigned) atoi(sCmd.next());
 

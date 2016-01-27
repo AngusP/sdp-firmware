@@ -5,12 +5,10 @@ import serial
 import time
 from get_rotation_delta import get_rotation_delta
 
-cw_rot = "M -83 -83 -83\n"
-acw_rot = "M 84 84 84\n"
-fwd = "M 250 -255 0\n"
+fwd = "M 253 -255 0\n"
 
 # Moves forward at 29 cm/s
-move_speed = 33.79
+move_speed = 33.13
 move_spool = 0.2
 
 rot_wait = 3

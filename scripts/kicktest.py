@@ -11,17 +11,17 @@ def main(port):
 
     if whocares == 1:
         # 150cm
-        port.write("kick -255 400\n")
+        port.write("kick -255 380\n")
 
     if whocares == 2:
         # 100cm
-        port.write("kick -180 500\n")
+        port.write("kick -190 430\n")
 
     if whocares == 3:
         # 050cm
-        port.write("kick -180 300\n")
+        port.write("kick -180 250\n")
         time.sleep(0.5)
-        port.write("kick -180 400\n")
+        port.write("kick -180 350\n")
     
 if __name__ == '__main__':
     print "Milestone 1 kicker"
