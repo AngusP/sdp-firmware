@@ -32,21 +32,47 @@ def main():
 
     disp = math.sqrt(pow(disp_x,2) + pow(disp_y,2))
 
-    if disp_x != 0:
-        disp_rot = np.arctan(disp_y / disp_x) * (180.0 / np.pi)
+    if disp_x == 0:
+        disp_rot = (disp_y/abs(disp_y)) * 90.0
+    elif disp_y == 0:
+        if disp_x < 0:
+            disp_rot = 180.0
+        else:
+            disp_rot = 0.0
+    elif disp_y < 0 and disp_x > 0:
+        # quadrant 2
+        disp_rot = (np.arctan(disp_y / disp_x) * (180.0 / np.pi)) + 180.0
+    elif disp_y < 0 and disp_x < 0:
+        # quadrant 3
+        disp_rot = (np.arctan(disp_y / disp_x) * (180.0 / np.pi)) + 180.0
+    elif disp_y > 0 and disp_x < 0:
+        # quadrant 2
+        disp_rot = (np.arctan(disp_y / disp_x) * (180.0 / np.pi)) + 360.0
     else:
-        # tan undefined for +-90deg... grrrr
-        disp_rot = (disp_y / abs(disp_y)) * 90
+        # quadrant 1
+        disp_rot = (np.arctan(disp_y / disp_x) * (180.0 / np.pi))
 
-    if disp_y == 0 and disp_x < 0:
-        disp_rot = 180.0
+    # important to do this before we decide on cw or acw
+    if rotation != 0:
+        rotation -= disp_rot
+    else:
+        # go back to original heading if no rotation wanted
+        rotation = -disp_rot
+        
+    # go ACW if it's shorter
+    if disp_rot > 180.0:
+        disp_rot = 180.0 - disp_rot
 
-    rotation -= disp_rot
+    if rotation > 180.0:
+        rotation = 180.0 - rotation
         
     print "Displacement is",
     print disp
     print "With a rotation of",
     print disp_rot,
+    print "degrees",
+    print "followed by a rotation of",
+    print rotation,
     print "degrees"
 
     move_time = (disp / move_speed) + move_spool
