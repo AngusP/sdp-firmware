@@ -3,6 +3,7 @@ import numpy as np
 import math
 import serial
 import time
+from get_rotation_delta import get_rotation_delta
 
 cw_rot = "M -83 -83 -83\n"
 acw_rot = "M 84 84 84\n"
@@ -11,9 +12,8 @@ fwd = "M 250 -255 0\n"
 # Moves forward at 29 cm/s
 move_speed = 33.79
 move_spool = 0.2
-# rotational speed, 360 deg in 4.8 sec
-rot_speed = 93.9
-rot_spool = 0.3
+
+rot_wait = 3
 
 def main():
     which_port = raw_input("Serial port? (e.g. /dev/ttyACM0) ")
@@ -32,7 +32,7 @@ def main():
 
     disp = math.sqrt(pow(disp_x,2) + pow(disp_y,2))
 
-    if disp_x == 0:
+    if disp_x == 0 and disp_y != 0:
         disp_rot = (disp_y/abs(disp_y)) * 90.0
     elif disp_y == 0:
         if disp_x < 0:
@@ -63,7 +63,8 @@ def main():
     if disp_rot > 180.0:
         disp_rot = 180.0 - disp_rot
 
-    if rotation > 180.0:
+    # If we're doing more than a full circle, don't shorten
+    if rotation > 180.0 and rotation < 360:
         rotation = 180.0 - rotation
         
     print "Displacement is",
@@ -76,38 +77,25 @@ def main():
     print "degrees"
 
     move_time = (disp / move_speed) + move_spool
-    rot_time = (abs(disp_rot) / rot_speed) + rot_spool
-
-    if rotation != 0:
-        final_rot_time = (abs(rotation) / rot_speed) + rot_spool
-    else:
-        final_rot_time = 0
         
-    print "Timings are"
+    print "Timing for movement is"
     print move_time,
-    print "for movement and ",
-    print rot_time,
-    print "for initial rotation and finally",
-    print final_rot_time
+    print "seconds"
     
-    print "Exectuting first rotate move..."
     # rotate to point correct dir, if we have to
     if disp_rot != 0.0:
-
+        print "Exectuting first rotate move..."
+        
         if disp_rot < 0:
             # Anti-clockwise
-            port.write(acw_rot)
+            port.write("rotate 100 "+ str(get_rotation_delta(disp_rot)) +"\n")
         else:
             # Clockwise
-            port.write(cw_rot)
+            port.write("rotate -100 "+ str(get_rotation_delta(disp_rot)) +"\n")
 
-        time.sleep(rot_time)
-        # Stop so motors have the same stall torque to overcome
-        port.write("M 0 0 0\n")
+        time.sleep(disp_rot / 80.0) # magic constant wooo
+        time.sleep(1)
 
-    
-    time.sleep(1)
-    
     # forward
     print "Exectuting linear move..."
     port.write(fwd)
@@ -120,14 +108,10 @@ def main():
     if rotation != 0:
 
         if rotation < 0:
-            port.write(acw_rot)
+            port.write("rotate 100 "+ str(get_rotation_delta(rotation)) +"\n")
         else:
-            port.write(cw_rot)
-
-        time.sleep(final_rot_time)
-        port.write("M 0 0 0\n")
-            
-
+            port.write("rotate -100 "+ str(get_rotation_delta(rotation)) +"\n")
+    
     print "Done, exiting"
 
     

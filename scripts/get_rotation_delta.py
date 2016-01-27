@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 def get_rotation_delta(angle):
     if angle < 0:
-        return -get_rotation_delta(-angle)
+        return get_rotation_delta(-angle)
 
     data = OrderedDict([
         (0, 0),
@@ -32,7 +32,3 @@ def get_rotation_delta(angle):
 
     return int(gradient * angle - gradient * smaller_angle + data[smaller_angle])
 
-
-target_angle = int(input("Angle? "))
-
-print(get_rotation_delta(target_angle))
