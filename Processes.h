@@ -8,17 +8,23 @@
 #define HEARTBEAT_PROCESS 0
 #define POLL_ENCODERS_PROCESS 1
 #define CHECK_MOTORS_PROCESS 2
+
+#define DFL_PROCESS_TABLE_SIZE 5
+
 /*
  *  Process structure, for defining a clock synchronous process
  */
 
 typedef struct {
+    size_t id,
     unsigned long last_run, interval;
     bool enabled;
     void (*callback)();
 } process;
 
-
+/*  
+ *  Process class, manipulates and executes processes
+ */
 
 class Processes
 {
@@ -41,7 +47,9 @@ class Processes
         static void check_rotation();
 
     private:
-        static process* collection[PROCESS_COUNT];
+        //static process* collection[PROCESS_COUNT];
+        process* tasks;
+        size_t num_tasks;
 };
 
 extern Processes processes;

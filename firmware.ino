@@ -24,7 +24,7 @@ CommandSet command_set;
 Processes processes;
 
 /***
-    LOOP & SETUP
+    SETUP
 ***/
 void setup()
 {
@@ -39,6 +39,9 @@ void setup()
     Serial.println(F("STARTUP"));
 }
 
+/***
+    LOOP
+***/
 void loop()
 {
     /* async */

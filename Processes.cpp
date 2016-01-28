@@ -10,7 +10,9 @@
   Toggle LED ~1 time per second; 999 so it is unlikely to coincide
   with things that actually have to happen once per second
 */
+/*
 static process heartbeat_process = {
+    .id         = HEARTBEAT_PROCESS,
     .last_run   = 0,
     .interval   = 999,
     .enabled    = true,
@@ -18,6 +20,7 @@ static process heartbeat_process = {
 };
 
 static process poll_encoders_process = {
+    .id         = POLL_ENCODERS_PROCESS,
     .last_run   = 0,
     .interval   = 50,
     .enabled    = true,
@@ -25,6 +28,7 @@ static process poll_encoders_process = {
 };
 
 static process check_motors_process = {
+    .id         = CHECK_MOTORS_PROCESS,
     .last_run   = 0,
     .interval   = 50,
     .enabled    = false,
@@ -32,20 +36,32 @@ static process check_motors_process = {
 };
 
 process* Processes::collection[PROCESS_COUNT];
+*/
 
 void Processes::setup()
 {
-    collection[HEARTBEAT_PROCESS]     = &heartbeat_process;
-    collection[POLL_ENCODERS_PROCESS] = &poll_encoders_process;
-    collection[CHECK_MOTORS_PROCESS]  = &check_motors_process;
+    /* 
+       Dynamically allocate our array of processes. This is 
+       risky on an Arduino with it's meagre 2kb of SRAM, 
+       but it makes registering of processes cleaner,
+       at the expense of setup time.
+
+       Additionally it is important that none of the processes
+       malloc themselves memory whilst registering, as calls
+       to realloc to grow the process table will have to go
+       around that memory, wasting heap space.
+    */
+    num_tasks = 0;
+    ptable_size = DFL_PROCESS_TABLE_SIZE;
+    tasks = (process*) malloc(ptable_size * sizeof(process));
 }
 
 void Processes::run()
 {
-    for (size_t i = 0; i < PROCESS_COUNT; i++) {
-        if (collection[i]->enabled && millis() >= (collection[i]->last_run + collection[i]->interval)){
-            collection[i]->callback();
-            collection[i]->last_run = millis();
+    for (size_t i = 0; i < num_tasks; i++) {
+        if (tasks[i]->enabled && millis() >= (tasks[i]->last_run + tasks[i]->interval)){
+            tasks[i]->callback();
+            tasks[i]->last_run = millis();
         }
     }
 }
@@ -54,30 +70,34 @@ void Processes::run()
 /***  PROCESS MANAGEMENT ROUTINES  *******************************************************************/
 
 
-void Processes::disable(size_t process_id)
+void Processes::disable(size_t pid)
 {
-    collection[process_id]->enabled = false;
+    tasks[pid]->enabled = false;
 }
 
-void Processes::enable(size_t process_id)
+void Processes::enable(size_t pid)
 {
-    collection[process_id]->enabled = true;
+    tasks[pid]->enabled = true;
 }
 
-void Processes::change(size_t process_id, void (*callback)(), unsigned long interval)
+/*
+ *  Update a process' callback &| interval by id reference
+ */
+
+void Processes::change(size_t pid, void (*callback)(), unsigned long interval)
 {
-    change(process_id, callback);
-    change(process_id, interval);
+    change(pid, callback);
+    change(pid, interval);
 }
 
-void Processes::change(size_t process_id, void (*callback)())
+void Processes::change(size_t pid, void (*callback)())
 {
-    collection[process_id]->callback = callback;
+    tasks[pid]->callback = callback;
 }
 
-void Processes::change(size_t process_id, unsigned long interval)
+void Processes::change(size_t pid, unsigned long interval)
 {
-    collection[process_id]->interval = interval;
+    tasks[pid]->interval = interval;
 }
 
 
