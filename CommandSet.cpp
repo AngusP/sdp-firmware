@@ -224,8 +224,10 @@ void CommandSet::rotate()
 
     state.rotation_delta = delta;
 
-    processes.change(CHECK_MOTORS_PROCESS, processes.check_rotation, 60);
-    processes.enable(CHECK_MOTORS_PROCESS);
+
+    // TODO: Find a safe way to do this
+    //processes.change(CHECK_MOTORS_PROCESS, processes.check_rotation, 60);
+    //processes.enable(CHECK_MOTORS_PROCESS);
 
     write_powers();
 }

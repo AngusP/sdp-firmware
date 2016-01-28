@@ -17,13 +17,12 @@
 #include "Processes.h"
 #include "SDPArduino.h"
 #include "addresses.h"
-#include "robot.cpp"
 
 State state;
 CommandSet command_set;
 Processes processes;
 
-void heartbeat_f();
+void heartbeat_f(size_t);
 process heartbeat = {
     .id         = 0,
     .last_run   = 0,
@@ -32,7 +31,7 @@ process heartbeat = {
     .callback   = &heartbeat_f
 };
 
-void poll_encoders_f();
+void poll_encoders_f(size_t);
 process poll_encoders = {
     .id         = 0,
     .last_run   = 0,
@@ -41,7 +40,7 @@ process poll_encoders = {
     .callback   = &poll_encoders_f
 };
 
-void check_motors_f();
+void check_motors_f(size_t);
 process check_motors = {
     .id         = 0,
     .last_run   = 0,
@@ -87,13 +86,13 @@ void loop()
     PROCESS FUNCTIONS
 ***/
 
-void heartbeat_f()
+void heartbeat_f(size_t pid)
 {
     // Toggles the LED
     command_set.led();
 }
 
-void poll_encoders_f()
+void poll_encoders_f(size_t pid)
 {
     Wire.requestFrom(encoder_i2c_addr, motor_count);
 
@@ -111,9 +110,11 @@ void poll_encoders_f()
           Update speed using the time now and the time we last checked
         */
 
+        process* self = processes.get_by_id(pid);
+
         state.motors[i]->speed = (float) delta /
                                  (((float) millis() -
-                                   (float) collection[POLL_ENCODERS_PROCESS]->last_run) / 1000.0);
+                                   (float) self->last_run) / 1000.0);
 
         if (state.motors[i]->power < 0) {
             state.motors[i]->speed *= -1;
@@ -122,13 +123,13 @@ void poll_encoders_f()
 }
 
 
-void check_motors()
+void check_motors_f(size_t pid)
 {
     // TODO
 }
 
 
-void check_rotation()
+void check_rotation(size_t pid)
 {
     long current_delta = 0;
 
@@ -143,6 +144,6 @@ void check_rotation()
         Serial.println("Ending rotation");
         #endif
         motorAllStop();
-        processes.disable(CHECK_MOTORS_PROCESS);
+        processes.disable(pid);
     }
 }

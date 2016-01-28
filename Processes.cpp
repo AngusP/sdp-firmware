@@ -21,21 +21,14 @@ void Processes::setup()
     */
     num_tasks = 0;
     ptable_size = DFL_PROCESS_TABLE_SIZE;
-    tasks = (process*) malloc(ptable_size * sizeof(process));
-
-    #ifdef FW_DEBUG
-    Serial.print(F("Process table initialized at addr 0x"));
-    Serial.print(tasks, HEX);
-    Serial.print(F(" with size "));
-    Serial.println(ptable_size);
-    #enif
+    tasks = (process**) malloc(ptable_size * sizeof(process*));
 }
 
 void Processes::run()
 {
     for (size_t i = 0; i < num_tasks; i++) {
         if (tasks[i]->enabled && millis() >= (tasks[i]->last_run + tasks[i]->interval)){
-            tasks[i]->callback();
+            tasks[i]->callback(tasks[i]->id);
             tasks[i]->last_run = millis();
         }
     }
@@ -74,6 +67,7 @@ size_t Processes::add(process* proc)
     if (num_tasks >= ptable_size)
         grow_table(num_tasks - ptable_size +1);
 
+    // TODO: Check pointer logic
     tasks[num_tasks++] = proc;
     proc->id = num_tasks;
 
@@ -81,14 +75,27 @@ size_t Processes::add(process* proc)
     return num_tasks-1;
 }
 
+
+process* Processes::get_by_id(size_t pid)
+{
+    if (pid >= num_tasks)
+        return NULL;
+
+    return tasks[pid];
+}
+
+
 void Processes::grow_table(size_t num)
 {
     /*
       Reallocate memory for ther process table, panicking if this does not work.
     */
     ptable_size += num;
-    process* new_tasks = (process*) realloc(tasks, ptable_size * sizeof(process));
-    new_tasks == NULL ? panic(PROCESS_ERR_OOM) : tasks = new_tasks;
+    process** new_tasks = (process**) realloc(tasks, ptable_size * sizeof(process*));
+
+    if (new_tasks == NULL) panic(PROCESS_ERR_OOM);
+
+    tasks = new_tasks;
 }
 
 
@@ -107,12 +114,12 @@ void Processes::enable(size_t pid)
  *  @return: -1 if failure, 0 if success
  */
 
-int Processes::change(size_t pid, void (*callback)(), unsigned long interval)
+int Processes::change(size_t pid, void (*callback)(size_t), unsigned long interval)
 {
     return change(pid, callback) | change(pid, interval);
 }
 
-int Processes::change(size_t pid, void (*callback)())
+int Processes::change(size_t pid, void (*callback)(size_t))
 {
     if (pid >= num_tasks) return -1;
     tasks[pid]->callback = callback;

@@ -4,11 +4,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#define PROCESS_COUNT 3
-#define HEARTBEAT_PROCESS 0
-#define POLL_ENCODERS_PROCESS 1
-#define CHECK_MOTORS_PROCESS 2
-
 #define DFL_PROCESS_TABLE_SIZE 5
 
 /* Error codes for panics */
@@ -19,10 +14,10 @@
  */
 
 typedef struct {
-    size_t id,
+    size_t id;
     unsigned long last_run, interval;
     bool enabled;
-    void (*callback)();
+    void (*callback)(size_t);
 } process;
 
 /*  
@@ -33,18 +28,19 @@ class Processes {
 
 public:
     void setup();
-    void add(process* proc);
-    static void run();
-    static void enable(size_t process_id);
-    static void disable(size_t process_id);
+    void run();
+    size_t add(process* proc);
+    process* get_by_id(size_t pid);
+    void enable(size_t pid);
+    void disable(size_t pid);
     
-    static int change(size_t process_id, void (*callback)(), unsigned long interval);
-    static int change(size_t process_id, void (*callback)());
-    static int change(size_t process_id, unsigned long interval);
+    int change(size_t pid, void (*callback)(size_t), unsigned long interval);
+    int change(size_t pid, void (*callback)(size_t));
+    int change(size_t pid, unsigned long interval);
     
 protected:
-    process* tasks;
-    static void panic(int error);
+    process** tasks;
+    void panic(int error);
     
 private:
     size_t num_tasks;               // Number of processes in tasks
