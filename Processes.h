@@ -29,32 +29,28 @@ typedef struct {
  *  Process class, manipulates and executes processes
  */
 
-class Processes
-{
+class Processes {
 
-    public:
-        void setup();
-        void add(process* proc);
-        static void run();
-        static void enable(size_t process_id);
-        static void disable(size_t process_id);
+public:
+    void setup();
+    void add(process* proc);
+    static void run();
+    static void enable(size_t process_id);
+    static void disable(size_t process_id);
+    
+    static int change(size_t process_id, void (*callback)(), unsigned long interval);
+    static int change(size_t process_id, void (*callback)());
+    static int change(size_t process_id, unsigned long interval);
+    
+protected:
+    process* tasks;
+    static void panic(int error);
+    
+private:
+    size_t num_tasks;               // Number of processes in tasks
+    size_t ptable_size;             // Size of space allocated to tasks
+    void grow_table(size_t num);
 
-        static void change(size_t process_id, void (*callback)(), unsigned long interval);
-        static void change(size_t process_id, void (*callback)());
-        static void change(size_t process_id, unsigned long interval);
-
-        static void heartbeat();
-        static void poll_encoders();
-        static void check_motors();
-        static void milestone_1();
-        static void check_rotation();
-
-    private:
-        process* tasks;
-        size_t num_tasks;               // Number of processes in tasks
-        size_t ptable_size;             // Size of space allocated to tasks
-        void grow_table(size_t num);
-        static void panic(int error);
 };
 
 extern Processes processes;

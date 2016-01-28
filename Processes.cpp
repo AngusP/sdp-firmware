@@ -6,38 +6,6 @@
 #include "State.h"
 #include "addresses.h"
 
-/*
-  Toggle LED ~1 time per second; 999 so it is unlikely to coincide
-  with things that actually have to happen once per second
-*/
-/*
-static process heartbeat_process = {
-    .id         = HEARTBEAT_PROCESS,
-    .last_run   = 0,
-    .interval   = 999,
-    .enabled    = true,
-    .callback   = &Processes::heartbeat
-};
-
-static process poll_encoders_process = {
-    .id         = POLL_ENCODERS_PROCESS,
-    .last_run   = 0,
-    .interval   = 50,
-    .enabled    = true,
-    .callback   = &Processes::poll_encoders
-};
-
-static process check_motors_process = {
-    .id         = CHECK_MOTORS_PROCESS,
-    .last_run   = 0,
-    .interval   = 50,
-    .enabled    = false,
-    .callback   = &Processes::check_motors
-};
-
-process* Processes::collection[PROCESS_COUNT];
-*/
-
 void Processes::setup()
 {
     /* 
@@ -86,10 +54,9 @@ void Processes::panic(int error)
 
     default:
         Serial.println(F("!! PANIC"));
-
     }
 
-    /* Crash (AVR Instruction Set) */
+    /* Crash (AVR specific) */
     while (true) asm volatile("nop\n");
 }
 
@@ -105,17 +72,22 @@ size_t Processes::add(process* proc)
       @return: index of process in the process table
     */
     if (num_tasks >= ptable_size)
-        grow_table(1);
+        grow_table(num_tasks - ptable_size +1);
 
-    tasks[++num_tasks] = proc;
+    tasks[num_tasks++] = proc;
     proc->id = num_tasks;
-    return num_tasks;
+
+    /* Process id is the number -1 as we zero index */
+    return num_tasks-1;
 }
 
 void Processes::grow_table(size_t num)
 {
+    /*
+      Reallocate memory for ther process table, panicking if this does not work.
+    */
     ptable_size += num;
-    new_tasks = (process*) realloc(tasks, ptable_size * sizeof(process));
+    process* new_tasks = (process*) realloc(tasks, ptable_size * sizeof(process));
     new_tasks == NULL ? panic(PROCESS_ERR_OOM) : tasks = new_tasks;
 }
 
@@ -131,83 +103,25 @@ void Processes::enable(size_t pid)
 }
 
 /*
- *  Update a process' callback &| interval by id reference
+ *  Update a process' callback and/or interval by id reference
+ *  @return: -1 if failure, 0 if success
  */
 
-void Processes::change(size_t pid, void (*callback)(), unsigned long interval)
+int Processes::change(size_t pid, void (*callback)(), unsigned long interval)
 {
-    change(pid, callback);
-    change(pid, interval);
+    return change(pid, callback) | change(pid, interval);
 }
 
-void Processes::change(size_t pid, void (*callback)())
+int Processes::change(size_t pid, void (*callback)())
 {
+    if (pid >= num_tasks) return -1;
     tasks[pid]->callback = callback;
+    return 0;
 }
 
-void Processes::change(size_t pid, unsigned long interval)
+int Processes::change(size_t pid, unsigned long interval)
 {
+    if (pid >= num_tasks) return -1;
     tasks[pid]->interval = interval;
-}
-
-
-/***  ACTAUAL PROCESS HANDLERS  **********************************************************************/
-
-void Processes::heartbeat()
-{
-    // Toggles the LED
-    command_set.led();
-}
-
-void Processes::poll_encoders()
-{
-    Wire.requestFrom(encoder_i2c_addr, motor_count);
-
-    for (int i = 0; i < motor_count; i++) {
-        byte delta = (byte) Wire.read();
-        if (state.motors[i]->power < 0) {
-            if (delta) {
-                delta = 0xFF - delta;
-            }
-            state.motors[i]->disp -= delta;
-        } else {
-            state.motors[i]->disp += delta;
-        }
-        /*
-          Update speed using the time now and the time we last checked
-        */
-
-        state.motors[i]->speed = (float) delta /
-                                 (((float) millis() -
-                                   (float) collection[POLL_ENCODERS_PROCESS]->last_run) / 1000.0);
-
-        if (state.motors[i]->power < 0) {
-            state.motors[i]->speed *= -1;
-        }
-    }
-}
-
-void Processes::check_motors()
-{
-
-}
-
-
-void Processes::check_rotation()
-{
-    long current_delta = 0;
-
-    for (size_t i = 0; i < motor_count; i++) {
-        current_delta += abs(state.motors[i]->disp - state.initial_displacement[i]);
-    }
-
-    current_delta /= motor_count;
-
-    if (current_delta >= state.rotation_delta) {
-        #ifdef FW_DEBUG
-        Serial.println("Ending rotation");
-        #endif
-        motorAllStop();
-        processes.disable(CHECK_MOTORS_PROCESS);
-    }
+    return 0;
 }
