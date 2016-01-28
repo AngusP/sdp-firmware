@@ -22,6 +22,9 @@ State state;
 CommandSet command_set;
 Processes processes;
 
+/*
+  Blink status LED every second or so
+*/
 void heartbeat_f(size_t);
 process heartbeat = {
     .id         = 0,
@@ -31,6 +34,9 @@ process heartbeat = {
     .callback   = &heartbeat_f
 };
 
+/*
+  Rapidly check motor rotations and speeds
+*/
 void poll_encoders_f(size_t);
 process poll_encoders = {
     .id         = 0,
@@ -40,6 +46,9 @@ process poll_encoders = {
     .callback   = &poll_encoders_f
 };
 
+/*
+  Instantaneously correct motor speeds
+*/
 void check_motors_f(size_t);
 process check_motors = {
     .id         = 0,
