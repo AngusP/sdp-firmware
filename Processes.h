@@ -2,22 +2,21 @@
 #define FIRMWARE_PROCESSES_H
 
 #include <Arduino.h>
+#include <Wire.h>
 
-#define PROCESS_COUNT 4
+#define PROCESS_COUNT 3
 #define HEARTBEAT_PROCESS 0
 #define POLL_ENCODERS_PROCESS 1
 #define CHECK_MOTORS_PROCESS 2
-#define MILESTONE_1_PROCESS 3
-
 /*
  *  Process structure, for defining a clock synchronous process
  */
 
-struct process {
+typedef struct {
     unsigned long last_run, interval;
     bool enabled;
     void (*callback)();
-};
+} process;
 
 
 
@@ -42,7 +41,7 @@ class Processes
         static void check_rotation();
 
     private:
-        static struct process* collection[PROCESS_COUNT];
+        static process* collection[PROCESS_COUNT];
 };
 
 extern Processes processes;

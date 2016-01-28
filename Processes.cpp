@@ -1,9 +1,6 @@
 
 #define FW_DEBUG
 
-#include <Arduino.h>
-#include <Wire.h>
-
 #include "Processes.h"
 #include "CommandSet.h"
 #include "State.h"
@@ -13,43 +10,34 @@
   Toggle LED ~1 time per second; 999 so it is unlikely to coincide
   with things that actually have to happen once per second
 */
-static struct process heartbeat_process = {
+static process heartbeat_process = {
     .last_run   = 0,
     .interval   = 999,
     .enabled    = true,
     .callback   = &Processes::heartbeat
 };
 
-static struct process poll_encoders_process = {
+static process poll_encoders_process = {
     .last_run   = 0,
     .interval   = 50,
     .enabled    = true,
     .callback   = &Processes::poll_encoders
 };
 
-static struct process check_motors_process = {
+static process check_motors_process = {
     .last_run   = 0,
     .interval   = 50,
     .enabled    = false,
     .callback   = &Processes::check_motors
 };
 
-static struct process milestone_1_process = {
-    .last_run   = 0,
-    .interval   = 1000,
-    .enabled    = false,
-    .callback   = &Processes::milestone_1
-};
-
-
-struct process* Processes::collection[PROCESS_COUNT];
+process* Processes::collection[PROCESS_COUNT];
 
 void Processes::setup()
 {
     collection[HEARTBEAT_PROCESS]     = &heartbeat_process;
     collection[POLL_ENCODERS_PROCESS] = &poll_encoders_process;
     collection[CHECK_MOTORS_PROCESS]  = &check_motors_process;
-    collection[MILESTONE_1_PROCESS]   = &milestone_1_process;
 }
 
 void Processes::run()
@@ -132,68 +120,6 @@ void Processes::poll_encoders()
 void Processes::check_motors()
 {
 
-}
-
-void Processes::milestone_1()
-{
-    if (state.receiving) {
-        state.sending_index = 0;
-
-        #ifdef FW_DEBUG
-        Serial.println(F("Waiting for bytes..."));
-        #endif
-
-        /* Block and read serial */
-        while (state.sending_index < state.num_bytes){
-            if(Serial.available()){
-                state.receive_bytes[state.sending_index++] = (byte) Serial.read();
-
-                #ifdef FW_DEBUG
-                Serial.print(F("Read 0x"));
-                Serial.println(state.receive_bytes[state.sending_index-1], HEX);
-                #endif
-            }
-        }
-        
-        state.sending = true;
-        state.receiving = false;
-        state.sending_index = 0;
-        state.last_send = millis();
-        state.time_period = (1.0/(long) state.send_frequency) * 1000.0;
-
-        #ifdef FW_DEBUG
-        Serial.println(F("Got it, thanks bub"));
-        Serial.print(F("Writing at "));
-        Serial.print(state.send_frequency);
-        Serial.print(F(" ("));
-        Serial.print(state.time_period);
-        Serial.println(F(" s^-1)"));
-        #endif
-    }
-
-    // Ewww.
-    if (state.sending && (millis() >= (state.last_send + state.time_period))) {
-
-        if (state.sending_index < state.num_bytes) {
-            // 0x45 (0d69, hehe) is the address according to the milestone page
-            Wire.beginTransmission(0x45);
-            Wire.write(state.receive_bytes[state.sending_index++]);
-            Wire.endTransmission();
-
-        } else {
-            state.sending = false;
-
-            #ifdef FW_DEBUG
-            Serial.print(F("Sent "));
-            Serial.print(state.num_bytes);
-            Serial.println(F(" bytes over the i2c bus"));
-            #endif
-
-            disable(MILESTONE_1_PROCESS);
-        }
-        
-        state.last_send = millis();
-    }
 }
 
 

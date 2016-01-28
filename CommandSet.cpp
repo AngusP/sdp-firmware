@@ -48,7 +48,6 @@ void CommandSet::setup()
     sCmd.addCommand("Speeds", this->speeds);
 
     /* Misc commands */
-    sCmd.addCommand("Recv", this->receive);       // Milestone 1
     sCmd.addCommand("Pixels", this->pixels);      // Set LED colour
 
     sCmd.addCommand("kick", this->kick);          // Kick
@@ -157,31 +156,6 @@ void CommandSet::speeds()
 
 /***  MISC COMMANDS  *********************************************************************************/
 
-/*
-  Change state to waiting for up-to 250 bytes from controller
-
-  Comms syntax:
-  Recv (int:send speed) (int:number of bytes)
-*/
-void CommandSet::receive()
-{
-    char* arg1 = sCmd.next();
-    char* arg2 = sCmd.next();
-    bool die = false;
-
-    arg1 == NULL ? die = true : (state.send_frequency = atoi(arg1));
-    arg2 == NULL ? die = true : (state.num_bytes      = atoi(arg2));
-
-    if (die) {
-        return CommandSet::unrecognized(NULL);
-    }
-
-    state.num_bytes = state.num_bytes > 250 ? 250 : state.num_bytes;
-
-    state.receiving = true;
-    processes.change(MILESTONE_1_PROCESS, (unsigned long) state.send_frequency);
-    processes.enable(MILESTONE_1_PROCESS);
-}
 
 void CommandSet::pixels()
 {

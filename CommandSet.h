@@ -20,7 +20,6 @@ class CommandSet
         static void stop();
         static void go();
         static void speeds();
-        static void receive();
         static void pixels();
         static void kick();
         static void rotate();
