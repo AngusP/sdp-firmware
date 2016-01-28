@@ -11,6 +11,9 @@
 
 #define DFL_PROCESS_TABLE_SIZE 5
 
+/* Error codes for panics */
+#define PROCESS_ERR_OOM 0
+
 /*
  *  Process structure, for defining a clock synchronous process
  */
@@ -31,7 +34,7 @@ class Processes
 
     public:
         void setup();
-
+        void add(process* proc);
         static void run();
         static void enable(size_t process_id);
         static void disable(size_t process_id);
@@ -47,9 +50,11 @@ class Processes
         static void check_rotation();
 
     private:
-        //static process* collection[PROCESS_COUNT];
         process* tasks;
-        size_t num_tasks;
+        size_t num_tasks;               // Number of processes in tasks
+        size_t ptable_size;             // Size of space allocated to tasks
+        void grow_table(size_t num);
+        static void panic(int error);
 };
 
 extern Processes processes;
