@@ -1,0 +1,25 @@
+%
+%  FIRMWARE USER GUIDE
+%
+
+\section{Firmware}
+
+\subsection{Compiling \& Uploading}
+
+All the necessary source files to compile and run the firmware on an Arduino Uno or compatible microcontroller are in the root directory of the firmware Git repository. The code has been tested on both an Arduino Uno and a Xino RF, both of which are designed around the Atmel AT38P microcontroller. The code is not guaranteed to work on any other boards though it will be fine in most cases.\\
+
+The `main' source file is firmware.ino, from which the other source files are included. To compile, it is easiest to open \texttt{firmware.ino} in the Arduino IDE. Note that the IDE must be version 1.6.0 or Greater; The version currently bundled with DICE is too old to support some of the C++ 11 features used in this codebase. We will also assume that you are using a Linux based system. Also note that the IDE's automagic linker is fussy, and will want \texttt{firmware.ino}'s parent directory to also be called \texttt{firmware}. The most recent build of the Arduino IDE is available from \texttt{http://arduino.cc}.\\
+
+Once the Arduino IDE has verified the code, ensure the Arduino you wish to program is plugged in, it's power light is on (if it has one) and the IDE can detect it - If it can, it'll be available under Tools $>$ Serial Port $>$ /dev/ttyACM[n]. Make sure that the correct board is selected - `Arduino/Genuino Uno' works for both the Uno and Xino. To upload, hit the upload button (The arrow in the blue toolbar) which will proceed to flash the board. See \texttt{arduino.cc} for troubleshooting.\\
+
+The only visible confirmation that the firmware is running correctly is that the status LED on the board should be blinking on and off every second.
+
+\subsection{Serial Port Setup}
+
+Some of the specifics will be different depending on which Arduino board is used; This guide assumes the use of the Xino RF. Using Serial over USB is pretty straightforward so is useful as a sanity check if the RF is giving you trouble.\\
+
+The firmware communicates at \texttt{115200} Baud, meaning that the serial terminal you're using, the RF module on the Xino, and the RF USB modem stick must all be using this Baud rate, otherwise you will onlr recieve garbage data. I'll leave details on how to configure the RF modules to Xino's own user guide, to save repeating information and perhaps making a mistake in doing so.\\
+
+Unfortunately a decent serial terminal is hard to come by on Linux; Some such as Minicom are good but lack the ability to send a character string as a packet that we require. PuTTY similarly seems unable to send a string as a single packet. Minicom can be coerced into doing this by sending an ASCII text file to the device, but this is less than ideal. The Arduino IDE's built in Serial Monitor is simple but sufficient for out needs. Make sure it is communicating at the correct Baud rate, and is set to send a `newline` after the string is sent to the Arduino.\\
+
+The simplest command the firmware responds to is \texttt{ping}, which should immediately receive a \texttt{pong} back.
