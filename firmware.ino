@@ -17,8 +17,7 @@
 #include "Processes.h"
 #include "SDPArduino.h"
 #include "addresses.h"
-
-#include "robot.cpp"
+#include "robot.h"
 
 State state;
 CommandSet command_set;

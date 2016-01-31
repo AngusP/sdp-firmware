@@ -4,29 +4,10 @@
 
 ***/
 
-#include "Processes.h"
-#include "CommandSet.h"
+#include "robot.h"
 
-class Robot {
-
-public:
-    void register_processes();
-
-};
-
-extern Robot bot;
-
-void Robot::register_processes()
-{
-    processes.add(&poll_encoders);
-    processes.add(&check_motors);
-    processes.add(&heartbeat);
-}
-
-
-
-/***
-    PROCESS DEFINITIONS
+/*** 
+     PROCESS DEFINITIONS
 ***/
 
 /*
@@ -67,8 +48,8 @@ process check_motors = {
 
 
 
-/***
-    PROCESS FUNCTIONS
+/*** 
+     PROCESS FUNCTIONS
 ***/
 
 void heartbeat_f(size_t pid)
@@ -114,7 +95,7 @@ void check_motors_f(size_t pid)
 }
 
 
-void check_rotation(size_t pid)
+void check_rotation_f(size_t pid)
 {
     long current_delta = 0;
 
@@ -132,3 +113,17 @@ void check_rotation(size_t pid)
         processes.disable(pid);
     }
 }
+
+/*** 
+     REGISTER WITH PROCESS OBJECT
+***/
+
+void Robot::register_processes()
+{
+    processes.add(&poll_encoders);
+    processes.add(&check_motors);
+    processes.add(&heartbeat);
+}
+
+
+
