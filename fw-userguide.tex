@@ -20,7 +20,7 @@ The only visible confirmation that the firmware is running correctly is that the
 
 Some of the specifics will be different depending on which Arduino board is used; This guide assumes the use of the Xino RF. Using Serial over USB is pretty straightforward so is useful as a sanity check if the RF is giving you trouble.
 
-The firmware communicates at \texttt{115200} Baud, meaning that the serial terminal you're using, the RF module on the Xino, and the RF USB modem stick must all be using this Baud rate, otherwise you will only receive garbage data. I'll leave details on how to configure the RF modules to Xino's own user guide, to save repeating information and perhaps making a mistake in doing so.
+The firmware communicates at \texttt{115200} Baud, meaning that the serial terminal you're using, the RF module on the Xino, and the RF USB modem stick must all be using this Baud rate, otherwise you will only receive garbage data. Details on how to configure the RF modules are left to Xino's own user guide, to save repeating information and perhaps making a mistake in doing so.
 
 Unfortunately a decent serial terminal is hard to come by on Linux; We need one with a `line mode'. Minicom can be coerced into doing this by sending an ASCII text file to the device, but this is less than ideal. I find that \href{http://freeware.the-meiers.org/}{`CoolTerm'} is the most capable free tool available, though PuTTY also has a `Line Editing Mode' that is perfectly useable in conjunction with `Local Echo'. The Arduino IDE's built in Serial Monitor is simple but will also work. Make sure it is communicating at the correct Baud rate, and is set to send a `newline' after the string is sent to the Arduino.
 
