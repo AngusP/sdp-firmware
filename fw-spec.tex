@@ -11,7 +11,7 @@ This is the main file which contains the \texttt{void setup()} and \texttt{void 
 
 \paragraph{\texttt{SerialCommand.cpp}} This file provides a simple library whose purpose is to map command strings to callbacks which it then executes based on the input it reads from the serial port.
 
-\paragraph{\texttt{CommandSet.cpp}} This object initializes \texttt{SerialCommand} and provides the callbacks to be called. There is one method for each command the robot can receive which then performs the necessary steps to fulfil it.
+\paragraph{\texttt{CommandSet.cpp}} This object initializes \texttt{SerialCommand} and associates each of the robot's commands with one of its methods, which then perform the necessary steps to fulfil it.
 
 \paragraph{\texttt{Processes.cpp}} The object in this file manages processes, which are essentially tasks to be completed periodically but not necessarily as often as the \texttt{loop()} function is called. There is a process that is responsible for toggling an LED every second in order to indicate the robot is \textit{alive}. Other processes include one that polls the encoders on each motor to monitor how far they travelled and another one that potentially makes any adjustments necessary to account for errors or motor differences based on this information.
 
