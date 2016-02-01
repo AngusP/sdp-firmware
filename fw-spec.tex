@@ -18,3 +18,12 @@ This is the main file which contains the \texttt{void setup()} and \texttt{void 
 \paragraph{\texttt{State.cpp}} This is a very simple object which essentially only serves as a central storage space for various values which may change during runtime. Most notably, it contains the current information on each of the holonomic motors such as power or total distance travelled, and the state of a data transfer.
 
 \paragraph{\texttt{SDPArduino.cpp}} This is a library based on the last year's winner team's firmware which declares several low-level utility functions providing convenient interface for bidirectional motor movement and halting.
+
+\subsection{Architecture}
+
+The firmware we're currently running has changed significantly from the source we started with (SDP Group 13 2015). While the concepts haven't changed much, the implementation is significantly different, and the majority of changes made have been done to generalise the control structures and add powerful flexibility to the firmware's capabilities.
+
+The notion of `Processes' has been introduced, allowing a structure to define a task that must be run at a regular interval. Process structures carry around all their own scheduling information, and a pointer to the function that needs to be run; This information is mutable, allowing state machine behaviour with variable yet defined intervals between transitions to be employed. The firmware as it stands uses Processes to poll the rotary encoders on the drive motors, and calculate the instantaneous speeds of each wheel. A Process was also used to guarantee accurate timing for the Milestone 1 communications task.
+
+Similarly, the parsing and execution of commands received over serial is handled by the `CommandSet' and `SerialCommand' classes, with function pointers being registered in association with the keyword string at setup time. These abstractions make it easy to add processes or new commands, and isolate potentially buggy functions from each-other (though any blocking IO operations will still break functionality)
+
