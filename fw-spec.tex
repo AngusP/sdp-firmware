@@ -27,3 +27,40 @@ The notion of `Processes' has been introduced, allowing a structure to define a 
 
 Similarly, the parsing and execution of commands received over serial is handled by the `CommandSet' and `SerialCommand' classes, with function pointers being registered in association with the keyword string at setup time. These abstractions make it easy to add processes or new commands, and isolate potentially buggy functions from each-other (though any blocking IO operations will still break functionality)
 
+\subsection{Command Set}
+
+\verb|ping\n|\\
+This is the simplest command the firmware responds to and should immediately receive a \verb|pong| back.
+
+\verb|L\n|\\
+Toggles the LED on/off. This will get overridden pretty quickly by the heartbeat blinking, but you can verify your connection this way too.
+
+\verb|M %d1 %d2 %d3\n|\\
+Tells the robot to apply power to the motors in the order 1 $>$ 2 $>$ 3. Valid range is -255 to 255 inclusive. \verb|M 0 0 0\n| will stop the robot.
+
+Gets the reply \verb|Moving\n 0: d1 1: d2 2: d3|
+
+\verb|S\n|\\
+Force a stop. The robot will remove power from the motors immediately, without trying to do any clever `quick stop` by braking the motors.
+
+Will get the reply \verb|Force stopping|
+
+\verb|Speeds\n|\\
+Will print the instantaneous speeds of all three drive motors in bogounits (encoder stops per second) in the form:
+
+\verb|0: n.nn 1: n.nn 2: n.nn|
+
+\verb|kick %d1 %d2\n|\\
+Kicks with power \texttt{d1} (motor power, -255 to 255 inclusive) for \texttt{d2} milliseconds.
+
+\verb|rotate %d1 %d2\n|\\
+Rotates at \texttt{d1} power (-255 to 255 inclusive) until the encoders have gone through \texttt{d2} stops (0+) on average. This can be used to get fairly precice rotation but will need calibration and depends on battery life \& power as the bot currently overrotates somewhat.
+
+\verb|help\n|\\
+Prints the commands that the robot is listening for; this is always correct as it is generated on-the-fly from the Command Set parsing class. It won't print how many arguments it expects, but is useful for checking spelling or troubleshooting a \texttt{N} (NACK).
+
+Expected output:
+\begin{verbatim}
+Valid input commands: (some have arguments)
+L\n ping\n help\n M\n S\n Speeds\n kick\n rotate
+\end{verbatim}
