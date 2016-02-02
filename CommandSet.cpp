@@ -123,11 +123,11 @@ void CommandSet::go()
 
 void CommandSet::speeds()
 {
+    Serial.print(millis());
+    Serial.print(F(", "));
     for (int i = 0; i < motor_count; i++) {
-        Serial.print(i);
-        Serial.print(F(": "));
         Serial.print(state.motors[i]->speed);
-        Serial.print(F(" "));
+        Serial.print(F(", "));
     }
     Serial.println();
 }
