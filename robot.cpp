@@ -43,7 +43,7 @@ void check_motors_f(size_t);
 process check_motors = {
     .id         = 0,
     .last_run   = 0,
-    .interval   = 1000,
+    .interval   = 50,
     .enabled    = true,
     .callback   = &check_motors_f
 };
@@ -95,7 +95,7 @@ void update_motors_f(size_t pid)
         }
 
         state.motors[i]->delta_speed =
-            fabsf(state.motors[i]->speed - old_speed);
+            state.motors[i]->speed - old_speed;
     }
 }
 
@@ -106,7 +106,8 @@ void check_motors_f(size_t pid)
     
     for (int i = 0; i < motor_count; i++) {
         if ((millis() - state.motors[i]->last_write) > state.stall_spool_time
-            && state.motors[i]->delta_speed > state.stall_threshold) {
+            && state.motors[i]->delta_speed < state.stall_threshold
+            && state.motors[i]->power != 0) {
             
             Serial.println();
             Serial.print(F("STALL motor "));
