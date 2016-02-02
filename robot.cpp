@@ -5,6 +5,7 @@
 ***/
 
 #include "robot.h"
+#include <math.h>
 
 /*** 
      PROCESS DEFINITIONS
@@ -72,6 +73,7 @@ void poll_encoders_f(size_t pid)
         } else {
             state.motors[i]->disp += delta;
         }
+
         /*
           Update speed using the time now and the time we last checked
         */
@@ -79,8 +81,7 @@ void poll_encoders_f(size_t pid)
         process* self = processes.get_by_id(pid);
 
         state.motors[i]->speed = (float) delta /
-                                 (((float) millis() -
-                                   (float) self->last_run) / 1000.0);
+            (((float) (millis() - self->last_run)) / 1000.0);
 
         if (state.motors[i]->power < 0) {
             state.motors[i]->speed *= -1;
@@ -91,7 +92,24 @@ void poll_encoders_f(size_t pid)
 
 void check_motors_f(size_t pid)
 {
-    // TODO
+    /* Stall (or wall) detection */
+    float new_pow_fact;
+    
+    for (int i = 0; i < motor_count; i++) {
+        new_pow_fact =
+            (float) state.motors[i]->power / fabsf(state.motors[i]->speed);
+
+        if (fabsf(new_pow_fact - state.motors[i]->pow_fact) > state.stall_threshold){
+            Serial.print(F("STALL on "));
+            Serial.print(i);
+            Serial.print(F("! - "));
+            Serial.print(new_pow_fact);
+            Serial.print(F(" <- "));
+            Serial.println(state.motors[i]->pow_fact);
+            motorAllStop();
+        }
+        state.motors[i]->pow_fact = new_pow_fact;
+    }
 }
 
 

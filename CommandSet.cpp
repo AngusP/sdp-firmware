@@ -54,6 +54,8 @@ void CommandSet::setup()
 
     sCmd.addCommand("rotate", this->rotate);      // Rotate
 
+    sCmd.addCommand("ste-stall", this->updateStall);
+
     sCmd.setDefaultHandler(this->unrecognized);   // Handler for command that isn't matched
 
 
@@ -231,3 +233,14 @@ void CommandSet::rotate()
 
     write_powers();
 }
+
+void CommandSet::updateStall()
+{
+    float new_threshold = atoi(sCmd.next());
+
+    Serial.print(F("New threshold is "));
+    Serial.print(new_threshold);
+
+    state.stall_threshold = new_threshold;
+}
+

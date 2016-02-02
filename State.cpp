@@ -6,21 +6,24 @@ static motor motor_0 = {
     .power        = 0,
     .direction    = 1,
     .disp         = 0,
-    .speed        = 0.0
+    .speed        = 0.0,
+    .pow_fact     = 0.0
 };
 static motor motor_1 = {
     .port         = 5,
     .power        = 0,
     .direction    = 1,
     .disp         = 0,
-    .speed        = 0.0
+    .speed        = 0.0,
+    .pow_fact     = 0.0
 };
 static motor motor_2 = {
     .port         = 4,
     .power        = 0,
     .direction    = 1,
     .disp         = 0,
-    .speed        = 0.0
+    .speed        = 0.0,
+    .pow_fact     = 0.0
 };
 
 void State::setup()
@@ -33,4 +36,6 @@ void State::setup()
     status_led = LOW;
     pinMode(status_led_pin, OUTPUT);
     digitalWrite(status_led_pin, status_led);
+
+    stall_threshold = 3.0;
 }

@@ -15,6 +15,7 @@ typedef struct {
     int port, power, direction;
     long disp;
     float speed;
+    float pow_fact;
 } motor;
 
 class State {
@@ -31,6 +32,8 @@ public:
     // Rotation stuff
     long initial_displacement[motor_count];
     long rotation_delta;
+
+    float stall_threshold;
 };
 
 extern State state;
