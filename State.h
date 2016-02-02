@@ -28,14 +28,6 @@ public:
     
     motor* motors[motor_count];
     
-    /* milestone hoops: */
-    byte receive_bytes[250];
-    int send_frequency, num_bytes, sending_index;
-    bool receiving;
-    bool sending;
-    unsigned long last_send;
-    long time_period;
-    
     // Rotation stuff
     long initial_displacement[motor_count];
     long rotation_delta;
