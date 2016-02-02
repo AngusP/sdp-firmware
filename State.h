@@ -12,10 +12,13 @@
    that the motors are added to the motors array.
 */
 typedef struct {
-    int port, power, direction;
+    int port;
+    int power;
+    int direction;
     long disp;
     float speed;
-    float pow_fact;
+    float delta_speed;
+    unsigned long last_write;
 } motor;
 
 class State {
@@ -34,6 +37,7 @@ public:
     long rotation_delta;
 
     float stall_threshold;
+    unsigned long stall_spool_time;
 };
 
 extern State state;

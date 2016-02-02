@@ -24,6 +24,7 @@ class CommandSet
         static void kick();
         static void rotate();
         static void updateStall();
+        
         static void unrecognized(const char* command);
 };
 

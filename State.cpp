@@ -7,7 +7,8 @@ static motor motor_0 = {
     .direction    = 1,
     .disp         = 0,
     .speed        = 0.0,
-    .pow_fact     = 0.0
+    .delta_speed  = 0.0,
+    .last_write   = 0
 };
 static motor motor_1 = {
     .port         = 5,
@@ -15,7 +16,8 @@ static motor motor_1 = {
     .direction    = 1,
     .disp         = 0,
     .speed        = 0.0,
-    .pow_fact     = 0.0
+    .delta_speed  = 0.0,
+    .last_write   = 0
 };
 static motor motor_2 = {
     .port         = 4,
@@ -23,7 +25,8 @@ static motor motor_2 = {
     .direction    = 1,
     .disp         = 0,
     .speed        = 0.0,
-    .pow_fact     = 0.0
+    .delta_speed  = 0.0,
+    .last_write   = 0
 };
 
 void State::setup()
@@ -37,5 +40,7 @@ void State::setup()
     pinMode(status_led_pin, OUTPUT);
     digitalWrite(status_led_pin, status_led);
 
-    stall_threshold = 3.0;
+    stall_threshold = 500.0;
+    stall_spool_time = 2000;
 }
+

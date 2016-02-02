@@ -9,29 +9,6 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, 5, NEO_GRB + NEO_KHZ800)
 
 static SerialCommand sCmd; // The SerialCommand object
 
-
-// TODO move this elsewhere
-void write_powers()
-{
-    for(int i=0; i < motor_count; i++){
-        #ifdef FW_DEBUG
-        Serial.print(i);
-        Serial.print(F(": "));
-        Serial.print(state.motors[i]->power);
-        Serial.print(F(" "));
-        #endif
-        if(state.motors[i]->power < 0){
-            motorBackward(state.motors[i]->port, abs(state.motors[i]->power));
-        } else {
-            motorForward(state.motors[i]->port,  abs(state.motors[i]->power));
-        }
-    }
-    #ifdef FW_DEBUG
-    Serial.println();
-    #endif
-}
-
-
 void CommandSet::setup()
 {
     /* Setup callbacks for SerialCommand commands */
@@ -45,16 +22,16 @@ void CommandSet::setup()
     sCmd.addCommand("G", this->go);               // Runs wheel motors with correction
 
     /* Read from rotary encoders */
-    sCmd.addCommand("Speeds", this->speeds);
+    sCmd.addCommand("speeds", this->speeds);
 
     /* Misc commands */
-    sCmd.addCommand("Pixels", this->pixels);      // Set LED colour
+    sCmd.addCommand("pixels", this->pixels);      // Set LED colour
 
     sCmd.addCommand("kick", this->kick);          // Kick
 
     sCmd.addCommand("rotate", this->rotate);      // Rotate
 
-    sCmd.addCommand("ste-stall", this->updateStall);
+    sCmd.addCommand("stall", this->updateStall);
 
     sCmd.setDefaultHandler(this->unrecognized);   // Handler for command that isn't matched
 
@@ -116,8 +93,9 @@ void CommandSet::move()
     Serial.println(F("Moving"));
     #endif
 
-    if(allzero)
-        brake_motors();
+    // TODO: Re-enable a safer version (with state power updates)
+    //if(allzero)
+    //    brake_motors();
 
     /* update speeds of all drive motors */
     for(int i=0; i < motor_count; i++){
@@ -132,9 +110,7 @@ void CommandSet::stop()
     Serial.println(F("Force stopping"));
     #endif
 
-    for (int i=0; i < motor_count; i++){
-        state.motors[i]->power = 0;
-    }
+    write_powers(0);
     motorAllStop();
 }
 

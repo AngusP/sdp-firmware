@@ -5,6 +5,7 @@
 ***/
 
 #include "robot.h"
+#include "SDPArduino.h"
 #include <math.h>
 
 /*** 
@@ -26,13 +27,13 @@ process heartbeat = {
 /*
   Rapidly check motor rotations and speeds
 */
-void poll_encoders_f(size_t);
-process poll_encoders = {
+void update_motors_f(size_t);
+process update_motors = {
     .id         = 0,
     .last_run   = 0,
     .interval   = 50,
     .enabled    = true,
-    .callback   = &poll_encoders_f
+    .callback   = &update_motors_f
 };
 
 /*
@@ -42,8 +43,8 @@ void check_motors_f(size_t);
 process check_motors = {
     .id         = 0,
     .last_run   = 0,
-    .interval   = 50,
-    .enabled    = false,
+    .interval   = 1000,
+    .enabled    = true,
     .callback   = &check_motors_f
 };
 
@@ -59,11 +60,15 @@ void heartbeat_f(size_t pid)
     command_set.led();
 }
 
-void poll_encoders_f(size_t pid)
+void update_motors_f(size_t pid)
 {
+    /*
+      Poll encoders and update speed
+    */
     Wire.requestFrom(encoder_i2c_addr, motor_count);
 
     for (int i = 0; i < motor_count; i++) {
+        
         byte delta = (byte) Wire.read();
         if (state.motors[i]->power < 0) {
             if (delta) {
@@ -77,15 +82,20 @@ void poll_encoders_f(size_t pid)
         /*
           Update speed using the time now and the time we last checked
         */
-
+        
+        float old_speed = state.motors[i]->speed;
+        
         process* self = processes.get_by_id(pid);
-
+        
         state.motors[i]->speed = (float) delta /
             (((float) (millis() - self->last_run)) / 1000.0);
 
         if (state.motors[i]->power < 0) {
-            state.motors[i]->speed *= -1;
+            state.motors[i]->speed *= -1.0;
         }
+
+        state.motors[i]->delta_speed =
+            fabsf(state.motors[i]->speed - old_speed);
     }
 }
 
@@ -93,22 +103,18 @@ void poll_encoders_f(size_t pid)
 void check_motors_f(size_t pid)
 {
     /* Stall (or wall) detection */
-    float new_pow_fact;
     
     for (int i = 0; i < motor_count; i++) {
-        new_pow_fact =
-            (float) state.motors[i]->power / fabsf(state.motors[i]->speed);
-
-        if (fabsf(new_pow_fact - state.motors[i]->pow_fact) > state.stall_threshold){
-            Serial.print(F("STALL on "));
+        if ((millis() - state.motors[i]->last_write) > state.stall_spool_time
+            && state.motors[i]->delta_speed > state.stall_threshold) {
+            
+            Serial.println();
+            Serial.print(F("STALL motor "));
             Serial.print(i);
-            Serial.print(F("! - "));
-            Serial.print(new_pow_fact);
-            Serial.print(F(" <- "));
-            Serial.println(state.motors[i]->pow_fact);
-            motorAllStop();
+            Serial.print(F("! "));
+            Serial.println(state.motors[i]->delta_speed);
+            write_powers(0);
         }
-        state.motors[i]->pow_fact = new_pow_fact;
     }
 }
 
@@ -138,7 +144,7 @@ void check_rotation_f(size_t pid)
 
 void Robot::register_processes()
 {
-    processes.add(&poll_encoders);
+    processes.add(&update_motors);
     processes.add(&check_motors);
     processes.add(&heartbeat);
 }

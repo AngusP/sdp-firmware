@@ -1,3 +1,4 @@
+#include "SDPArduino.h"
 #include <Arduino.h>
 #include <Wire.h>
 #include "State.h"
@@ -29,6 +30,39 @@ void SDPsetup() {
 void helloWorld() {
   Serial.println("hello world");
 }
+
+// Added >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+void write_powers()
+{
+    for(int i=0; i < motor_count; i++){
+        #ifdef FW_DEBUG
+        Serial.print(i);
+        Serial.print(F(": "));
+        Serial.print(state.motors[i]->power);
+        Serial.print(F(" "));
+        #endif
+        if(state.motors[i]->power < 0){
+            motorBackward(state.motors[i]->port, abs(state.motors[i]->power));
+        } else {
+            motorForward(state.motors[i]->port,  abs(state.motors[i]->power));
+        }
+        state.motors[i]->last_write = millis();
+    }
+    #ifdef FW_DEBUG
+    Serial.println();
+    #endif
+}
+
+void write_powers(int overwrite)
+{
+    for(int i=0; i < motor_count; i++){
+        state.motors[i]->power = overwrite;
+    }
+    write_powers();
+}
+
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 void motorForward(int motorNum, int motorPower) { //Makes Motor motorNum go forwards at a power of motorPower
   if (motorNum >= 0 and motorNum <= 5){
