@@ -54,6 +54,34 @@ void Processes::panic(int error)
 }
 
 
+/**
+   Print UNIX-like process status table
+   Thsi is expensive but should be run occasionally
+**/
+void Processes::status()
+{
+    Serial.println(F("pid \t enable \t interval \t last run \t callback"));
+    
+    for (size_t i=0; i<num_tasks; i++) {
+        
+        Serial.print(tasks[i]->id);
+        Serial.print(F("\t "));
+
+        tasks[i]->enabled ? Serial.print(F("true ")) : Serial.print(F("false"));
+        Serial.print(F("\t\t "));
+        
+        Serial.print(tasks[i]->interval);
+        Serial.print(F("\t\t "));
+        
+        Serial.print(tasks[i]->last_run);
+        Serial.print(F("\t\t "));
+        
+        Serial.print((uint16_t) tasks[i]->callback, HEX); // Erm... apparently that's ok 0_0
+        Serial.println();
+    }
+}
+
+
 /***  PROCESS MANAGEMENT ROUTINES  *******************************************************************/
 
 
@@ -76,12 +104,32 @@ size_t Processes::add(process* proc)
 }
 
 
-process* Processes::get_by_id(size_t pid)
+process* Processes::get_by_id(pid_t pid)
 {
     if (pid >= num_tasks)
         return NULL;
 
     return tasks[pid];
+}
+
+/**
+   Not particularly safe, but useful
+   Get a reference to a process by matching callback
+**/
+process* Processes::get_by_callback(void (*callback)(pid_t))
+{
+    size_t num_hits = 0;
+    process* found_process;
+    process** tasks_p = tasks;
+    
+    while (tasks_p != NULL){
+        if ((*tasks_p)->callback == callback) {
+            num_hits++;
+            found_process = *tasks_p++;
+        }
+    }
+
+    return num_hits == 1 ? found_process : NULL;
 }
 
 
@@ -99,12 +147,12 @@ void Processes::grow_table(size_t num)
 }
 
 
-void Processes::disable(size_t pid)
+void Processes::disable(pid_t pid)
 {
     tasks[pid]->enabled = false;
 }
 
-void Processes::enable(size_t pid)
+void Processes::enable(pid_t pid)
 {
     tasks[pid]->enabled = true;
 }
@@ -114,21 +162,48 @@ void Processes::enable(size_t pid)
  *  @return: -1 if failure, 0 if success
  */
 
-int Processes::change(size_t pid, void (*callback)(size_t), unsigned long interval)
+int Processes::change(pid_t pid, void (*callback)(pid_t), unsigned long interval)
 {
     return change(pid, callback) | change(pid, interval);
 }
 
-int Processes::change(size_t pid, void (*callback)(size_t))
+int Processes::change(pid_t pid, void (*callback)(pid_t))
 {
     if (pid >= num_tasks) return -1;
     tasks[pid]->callback = callback;
     return 0;
 }
 
-int Processes::change(size_t pid, unsigned long interval)
+int Processes::change(pid_t pid, unsigned long interval)
 {
     if (pid >= num_tasks) return -1;
     tasks[pid]->interval = interval;
     return 0;
+}
+
+
+
+/***  HELPER FUNCTIONS (PRIVATE)  ********************************************************************/
+
+void Processes::print_hex8(uint8_t *data, uint8_t length)
+{
+    char tmp[length*5+1];
+    byte first;
+    byte second;
+    for (int i=0; i<length; i++) {
+        first = (data[i] >> 4) & 0x0f;
+        second = data[i] & 0x0f;
+        // base for converting single digit numbers to ASCII is 48
+        // base for 10-16 to become upper-case characters A-F is 55
+        // note: difference is 7
+        tmp[i*5] = 48; // add leading 0
+        tmp[i*5+1] = 120; // add leading x
+        tmp[i*5+2] = first+48;
+        tmp[i*5+3] = second+48;
+        tmp[i*5+4] = 32; // add trailing space
+        if (first > 9) tmp[i*5+2] += 7;
+        if (second > 9) tmp[i*5+3] += 7;
+    }
+    tmp[length*5] = 0;
+    Serial.print(tmp);
 }

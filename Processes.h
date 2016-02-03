@@ -13,11 +13,13 @@
  *  Process structure, for defining a clock synchronous process
  */
 
+typedef size_t pid_t;
+
 typedef struct {
     size_t id;
     unsigned long last_run, interval;
     bool enabled;
-    void (*callback)(size_t);
+    void (*callback)(pid_t);
 } process;
 
 /*  
@@ -30,12 +32,17 @@ public:
     void setup();
     void run();
     size_t add(process* proc);
-    process* get_by_id(size_t pid);
-    void enable(size_t pid);
-    void disable(size_t pid);
     
-    int change(size_t pid, void (*callback)(size_t), unsigned long interval);
-    int change(size_t pid, void (*callback)(size_t));
+    process* get_by_id(pid_t pid);
+    process* get_by_callback(void (*callback)(pid_t));
+
+    void enable(pid_t pid);
+    void disable(pid_t pid);
+
+    void status();
+    
+    int change(size_t pid, void (*callback)(pid_t), unsigned long interval);
+    int change(size_t pid, void (*callback)(pid_t));
     int change(size_t pid, unsigned long interval);
     
 protected:
@@ -46,6 +53,9 @@ private:
     size_t num_tasks;               // Number of processes in tasks
     size_t ptable_size;             // Size of space allocated to tasks
     void grow_table(size_t num);
+
+    /* helpers */
+    void print_hex8(uint8_t *data, uint8_t length);
 
 };
 

@@ -33,6 +33,10 @@ void CommandSet::setup()
 
     sCmd.addCommand("stall", this->updateStall);
 
+    /* Debug and inspection commands */
+
+    sCmd.addCommand("ps", this->proc_dump);
+    
     sCmd.setDefaultHandler(this->unrecognized);   // Handler for command that isn't matched
 
 
@@ -208,6 +212,11 @@ void CommandSet::rotate()
     //processes.enable(CHECK_MOTORS_PROCESS);
 
     write_powers();
+}
+
+void CommandSet::proc_dump()
+{
+    processes.status();
 }
 
 void CommandSet::updateStall()

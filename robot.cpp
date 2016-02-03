@@ -15,7 +15,7 @@
 /*
   Blink status LED every second or so
 */
-void heartbeat_f(size_t);
+void heartbeat_f(pid_t);
 process heartbeat = {
     .id         = 0,
     .last_run   = 0,
@@ -27,7 +27,7 @@ process heartbeat = {
 /*
   Rapidly check motor rotations and speeds
 */
-void update_motors_f(size_t);
+void update_motors_f(pid_t);
 process update_motors = {
     .id         = 0,
     .last_run   = 0,
@@ -39,7 +39,7 @@ process update_motors = {
 /*
   Instantaneously correct motor speeds
 */
-void check_motors_f(size_t);
+void check_motors_f(pid_t);
 process check_motors = {
     .id         = 0,
     .last_run   = 0,
@@ -54,13 +54,13 @@ process check_motors = {
      PROCESS FUNCTIONS
 ***/
 
-void heartbeat_f(size_t pid)
+void heartbeat_f(pid_t pid)
 {
     // Toggles the LED
     command_set.led();
 }
 
-void update_motors_f(size_t pid)
+void update_motors_f(pid_t pid)
 {
     /*
       Poll encoders and update speed
@@ -100,7 +100,7 @@ void update_motors_f(size_t pid)
 }
 
 
-void check_motors_f(size_t pid)
+void check_motors_f(pid_t pid)
 {
     /* Stall (or wall) detection */
     
@@ -120,7 +120,7 @@ void check_motors_f(size_t pid)
 }
 
 
-void check_rotation_f(size_t pid)
+void check_rotation_f(pid_t pid)
 {
     long current_delta = 0;
 
