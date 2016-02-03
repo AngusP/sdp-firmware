@@ -75,8 +75,9 @@ void Processes::status()
         
         Serial.print(tasks[i]->last_run);
         Serial.print(F("\t\t "));
-        
-        Serial.print((uint16_t) tasks[i]->callback, HEX); // Erm... apparently that's ok 0_0
+
+        /* Apparently this cast is fine 0_o */
+        print_hex16((uint16_t) tasks[i]->callback);
         Serial.println();
     }
 }
@@ -185,25 +186,14 @@ int Processes::change(pid_t pid, unsigned long interval)
 
 /***  HELPER FUNCTIONS (PRIVATE)  ********************************************************************/
 
-void Processes::print_hex8(uint8_t *data, uint8_t length)
+void Processes::print_hex16(uint16_t number)
 {
-    char tmp[length*5+1];
-    byte first;
-    byte second;
-    for (int i=0; i<length; i++) {
-        first = (data[i] >> 4) & 0x0f;
-        second = data[i] & 0x0f;
-        // base for converting single digit numbers to ASCII is 48
-        // base for 10-16 to become upper-case characters A-F is 55
-        // note: difference is 7
-        tmp[i*5] = 48; // add leading 0
-        tmp[i*5+1] = 120; // add leading x
-        tmp[i*5+2] = first+48;
-        tmp[i*5+3] = second+48;
-        tmp[i*5+4] = 32; // add trailing space
-        if (first > 9) tmp[i*5+2] += 7;
-        if (second > 9) tmp[i*5+3] += 7;
-    }
-    tmp[length*5] = 0;
+    char tmp[2];
+    tmp[0] = (number >> 4) & 0x0F;
+    tmp[1] = number & 0x0F;
+
+    tmp[0] > 9 ? tmp[0] += 0x61  : tmp[0] += 0x30;
+    tmp[1] > 9 ? tmp[1] += 0x61  : tmp[1] += 0x30;
+    
     Serial.print(tmp);
 }

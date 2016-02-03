@@ -44,7 +44,7 @@ process check_motors = {
     .id         = 0,
     .last_run   = 0,
     .interval   = 50,
-    .enabled    = true,
+    .enabled    = false,
     .callback   = &check_motors_f
 };
 
