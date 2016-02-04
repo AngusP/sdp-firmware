@@ -55,7 +55,7 @@ private:
     void grow_table(size_t num);
 
     /* helpers */
-    void print_hex16(uint16_t data);
+    size_t memcheck();
 
 };
 

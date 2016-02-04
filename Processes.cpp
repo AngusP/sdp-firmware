@@ -60,8 +60,10 @@ void Processes::panic(int error)
 **/
 void Processes::status()
 {
+    Serial.println();
     Serial.println(F("pid \t enable \t interval \t last run \t callback"));
-    
+    Serial.println(F("--- \t ------ \t -------- \t -------- \t --------"));
+
     for (size_t i=0; i<num_tasks; i++) {
         
         Serial.print(tasks[i]->id);
@@ -77,9 +79,26 @@ void Processes::status()
         Serial.print(F("\t\t "));
 
         /* Apparently this cast is fine 0_o */
-        print_hex16((uint16_t) tasks[i]->callback);
+        Serial.print((uint16_t) tasks[i]->callback, HEX);
         Serial.println();
     }
+
+    Serial.println(F("--- \t ------ \t -------- \t -------- \t --------"));
+    Serial.print(F("mem: "));
+    Serial.print(memcheck());
+    Serial.print(F(" free of "));
+    Serial.println(RAMEND - RAMSTART, DEC);
+}
+
+size_t Processes::memcheck()
+{
+    size_t stackptr, heapptr;
+    stackptr = (size_t) malloc(4);
+    heapptr = stackptr;
+    free((void*) stackptr);
+    stackptr = (size_t)(&stackptr);
+
+    return stackptr - heapptr;
 }
 
 
@@ -97,11 +116,11 @@ size_t Processes::add(process* proc)
         grow_table(num_tasks - ptable_size +1);
 
     // TODO: Check pointer logic
-    tasks[num_tasks++] = proc;
-    proc->id = num_tasks;
+    tasks[num_tasks] = proc;
+    proc->id = num_tasks++;
 
     /* Process id is the number -1 as we zero index */
-    return num_tasks-1;
+    return num_tasks-1; 
 }
 
 
@@ -182,18 +201,3 @@ int Processes::change(pid_t pid, unsigned long interval)
     return 0;
 }
 
-
-
-/***  HELPER FUNCTIONS (PRIVATE)  ********************************************************************/
-
-void Processes::print_hex16(uint16_t number)
-{
-    char tmp[2];
-    tmp[0] = (number >> 4) & 0x0F;
-    tmp[1] = number & 0x0F;
-
-    tmp[0] > 9 ? tmp[0] += 0x61  : tmp[0] += 0x30;
-    tmp[1] > 9 ? tmp[1] += 0x61  : tmp[1] += 0x30;
-    
-    Serial.print(tmp);
-}
