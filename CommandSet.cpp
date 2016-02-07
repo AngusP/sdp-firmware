@@ -1,5 +1,6 @@
 #include "CommandSet.h"
 #include "Processes.h"
+#include "robot.h"
 #define FW_DEBUG
 
 // TODO move this elsewhere
@@ -40,7 +41,6 @@ void CommandSet::setup()
     sCmd.addCommand("ptog", this->proc_toggle);
     
     sCmd.setDefaultHandler(this->unrecognized);   // Handler for command that isn't matched
-
 
     // TODO move this
     strip.begin();
@@ -99,10 +99,16 @@ void CommandSet::move()
     Serial.println(F("Moving"));
     #endif
 
-    // TODO: Re-enable a safer version (with state power updates)
-    //if(allzero)
-    //    brake_motors();
-
+    /* Stop faster if we've been told to */
+    if(!allzero) {
+        #ifdef FW_DEBUG
+        Serial.println(F("Quickstop"));
+        #endif
+        write_powers(0);
+        brake_motors();
+        return;
+    }
+        
     /* update speeds of all drive motors */
     for(int i=0; i < motor_count; i++){
         state.motors[i]->power = new_powers[i];
@@ -223,7 +229,6 @@ void CommandSet::rotate()
     }
 
     state.rotation_delta = delta;
-
 
     // TODO: Find a safe way to do this
     //processes.change(CHECK_MOTORS_PROCESS, processes.check_rotation, 60);

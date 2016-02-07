@@ -27,12 +27,6 @@ void SDPsetup() {
   Wire.begin(); //Makes arduino master of the I2C line.
 }
 
-void helloWorld() {
-  Serial.println("hello world");
-}
-
-// Added >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 void write_powers()
 {
     for(int i=0; i < motor_count; i++){
@@ -61,8 +55,6 @@ void write_powers(int overwrite)
     }
     write_powers();
 }
-
-// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 void motorForward(int motorNum, int motorPower) { //Makes Motor motorNum go forwards at a power of motorPower
   if (motorNum >= 0 and motorNum <= 5){

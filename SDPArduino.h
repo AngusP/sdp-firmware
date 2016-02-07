@@ -2,6 +2,9 @@
  
 #ifndef HEADER_ARDUINOSDP
 #define HEADER_ARDUINOSDP
+
+#define FW_DEBUG
+
 //Power is a value between 0 and 255. 
 void SDPsetup(void);	//Sets up the arduino, run inside of void setup().
 void helloWorld(void); //prints Hello World to serial.
