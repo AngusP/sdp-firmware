@@ -40,7 +40,9 @@ void State::setup()
     pinMode(status_led_pin, OUTPUT);
     digitalWrite(status_led_pin, status_led);
 
-    stall_threshold = -3.0;
-    stall_spool_time = 500;
+    /* Magic numbers! But they're runtime updatable */
+    stall_gradient = 1.0;
+    stall_constant = 20.0;
+    stall_count = 0;
 }
 

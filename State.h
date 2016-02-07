@@ -36,8 +36,9 @@ public:
     long initial_displacement[motor_count];
     long rotation_delta;
 
-    float stall_threshold;
-    unsigned long stall_spool_time;
+    float stall_gradient;
+    float stall_constant;
+    unsigned int stall_count;
 };
 
 extern State state;

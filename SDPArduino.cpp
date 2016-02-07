@@ -25,6 +25,9 @@ void SDPsetup() {
   pinMode(A3,INPUT);
   digitalWrite(8,HIGH); //Pin 8 must be high to turn the radio on!
   Wire.begin(); //Makes arduino master of the I2C line.
+
+  // Make sure we're all zero'd out
+  motorAllStop();
 }
 
 void write_powers()

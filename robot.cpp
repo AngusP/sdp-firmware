@@ -104,18 +104,24 @@ void check_motors_f(pid_t pid)
 {
     /* Stall (or wall) detection */
     
-    for (int i = 0; i < motor_count; i++) {
-        if ((millis() - state.motors[i]->last_write) > state.stall_spool_time
-            && state.motors[i]->delta_speed < state.stall_threshold
-            && state.motors[i]->power != 0) {
-            
-            Serial.println();
-            Serial.print(F("STALL motor "));
-            Serial.print(i);
-            Serial.print(F("! "));
-            Serial.println(state.motors[i]->delta_speed);
-            write_powers(0);
+    for (int i=0; i<motor_count; i++) {
+        float spd_threshold = (state.stall_gradient * fabsf(state.motors[i]->power))
+            + state.stall_constant;
+
+        if (fabsf(state.motors[i]->speed) < spd_threshold &&
+            abs(state.motors[i]->power) >= 76) {
+            //Serial.print(F("stall on "));
+            //Serial.println(i);
+            state.stall_count += 10;
+        } else {
+            if (state.stall_count > 0) state.stall_count--;
         }
+    }
+
+    if (state.stall_count > 240) {
+        Serial.println(F("STALL!"));
+        write_powers(0);
+        state.stall_count = 0;
     }
 }
 

@@ -114,8 +114,8 @@ void CommandSet::stop()
 }
 
 void CommandSet::go()
-{
-
+{    
+// TODO, holonomics and shit
 }
 
 /***  READ ROTARY ENCODERS  **************************************************************************/
@@ -123,7 +123,7 @@ void CommandSet::go()
 void CommandSet::speeds()
 {
     Serial.print(millis());
-    Serial.print(F(", "));
+    Serial.print(F("ms: "));
     for (int i = 0; i < motor_count; i++) {
         Serial.print(state.motors[i]->speed);
         Serial.print(F(", "));
@@ -249,11 +249,15 @@ void CommandSet::proc_toggle()
 
 void CommandSet::updateStall()
 {
-    float new_threshold = atoi(sCmd.next());
+    float new_grad = (float) atof(sCmd.next());
+    float new_cons = (float) atof(sCmd.next());
 
-    Serial.print(F("New threshold is "));
-    Serial.print(new_threshold);
+    Serial.print(F("New parameters are "));
+    Serial.print(new_grad);
+    Serial.print(F(" & "));
+    Serial.println(new_cons);
 
-    state.stall_threshold = new_threshold;
+    state.stall_gradient = new_grad;
+    state.stall_constant = new_cons;
 }
 
