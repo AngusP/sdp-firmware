@@ -24,6 +24,7 @@ void Processes::setup()
     tasks = (process**) malloc(ptable_size * sizeof(process*));
 }
 
+
 void Processes::run()
 {
     for (size_t i = 0; i < num_tasks; i++) {
@@ -33,6 +34,7 @@ void Processes::run()
         }
     }
 }
+
 
 /**
    Crash if we cannot safely continue
@@ -87,7 +89,7 @@ void Processes::status()
     Serial.print(F("mem: "));
     Serial.print(memcheck());
     Serial.print(F(" free of "));
-    Serial.println(RAMEND - RAMSTART, DEC);
+    Serial.println(RAMEND - RAMSTART +1, DEC);
 }
 
 size_t Processes::memcheck()

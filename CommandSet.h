@@ -21,11 +21,13 @@ class CommandSet
         static void go();
         static void speeds();
         static void pixels();
+        static void grab();
         static void kick();
         static void rotate();
         static void updateStall();
 
         static void proc_dump();
+        static void proc_toggle();
         
         static void unrecognized(const char* command);
 };

@@ -27,6 +27,7 @@ void CommandSet::setup()
     /* Misc commands */
     sCmd.addCommand("pixels", this->pixels);      // Set LED colour
 
+    sCmd.addCommand("grab", this->grab);          // Grab 0 or 1
     sCmd.addCommand("kick", this->kick);          // Kick
 
     sCmd.addCommand("rotate", this->rotate);      // Rotate
@@ -36,6 +37,7 @@ void CommandSet::setup()
     /* Debug and inspection commands */
 
     sCmd.addCommand("ps", this->proc_dump);
+    sCmd.addCommand("ptog", this->proc_toggle);
     
     sCmd.setDefaultHandler(this->unrecognized);   // Handler for command that isn't matched
 
@@ -160,29 +162,45 @@ void CommandSet::pixels()
 
 
 
-void CommandSet::kick()
+void CommandSet::grab()
 {
+    int direction = atoi(sCmd.next());
+    
     const int port          = 1;
-    int motor_power         =            atoi(sCmd.next());
-    unsigned int duration   = (unsigned) atoi(sCmd.next());
+    const int motor_power   = 255;
 
     #ifdef FW_DEBUG
-    Serial.print(F("Trying to kick at "));
-    Serial.print(motor_power);
-    Serial.print(F(" power for "));
-    Serial.print(duration);
-    Serial.println(" milliseconds. Goodbye.");
+    Serial.print(F("grabbing "));
+    Serial.println(direction);
     #endif
 
-    if(motor_power < 0){
-        motorBackward(port, abs(motor_power));
+    if(direction){
+        /* close */
+        motorForward(port,  motor_power);
+        delay(1500);
     } else {
-        motorForward(port,  abs(motor_power));
+        /* open */
+        motorBackward(port, motor_power);
+        delay(1500);
+        motorForward(port, motor_power);
+        delay(700);
     }
 
-    delay(duration);
-
     motorStop(port);
+
+    #ifdef FW_DEBUG
+    Serial.println(F("done "));
+    #endif
+}
+
+
+void CommandSet::kick()
+{
+    #ifdef FW_DEBUG
+    Serial.println(F("kicking"));
+    #endif
+
+    //TODO
 }
 
 
@@ -217,6 +235,24 @@ void CommandSet::rotate()
 void CommandSet::proc_dump()
 {
     processes.status();
+}
+
+void CommandSet::proc_toggle()
+{
+    pid_t pid = (pid_t) atoi(sCmd.next());
+
+    process* proc = processes.get_by_id(pid);
+
+    if (proc == NULL) {
+        Serial.print(F("Unknown pid "));
+        Serial.println(pid);
+        return;
+    }
+    
+    proc->enabled ? processes.disable(pid) : processes.enable(pid);
+
+    Serial.print(F("toggled pid "));
+    Serial.println(pid);
 }
 
 void CommandSet::updateStall()
