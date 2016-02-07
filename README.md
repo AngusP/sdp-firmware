@@ -49,7 +49,7 @@ is giving you trouble.
 The firmware communicates at `115200` Baud, meaning that the serial
 terminal you’re using, the RF module on the Xino, and the RF USB modem
 stick must all be using this Baud rate, otherwise you will only receive
-garbage data. I’ll leave details on how to configure the RF modules to
+garbage data. Details on how to configure the RF modules are left to
 Xino’s own user guide, to save repeating information and perhaps making
 a mistake in doing so.
 
@@ -62,6 +62,89 @@ that is perfectly useable in conjunction with ‘Local Echo’. The Arduino
 IDE’s built in Serial Monitor is simple but will also work. Make sure it
 is communicating at the correct Baud rate, and is set to send a
 ‘newline’ after the string is sent to the Arduino.
+
+The command set that the robot currently recognises is documented in the
+Technical Specification.
+
+
+Firmware
+========
+
+Important Source Files
+----------------------
+
+#### `firmware.ino`
+
+This is the main file which contains the `void setup()` and
+`void loop()` functions. The former only initializes the serial port,
+calls the `setup()` methods of other pivotal objects, and outputs
+`STARTUP` to indicate that the robot is ready to receive commands. On
+the other hand, the `loop` function handles asynchronous logic by
+checking the serial port for any new commands and synchronous logic by
+running processes (more on these below).
+
+#### `SerialCommand.cpp`
+
+This file provides a simple library whose purpose is to map command
+strings to callbacks which it then executes based on the input it reads
+from the serial port.
+
+#### `CommandSet.cpp`
+
+This object initializes `SerialCommand` and associates each of the
+robot’s commands with one of its methods, which then perform the
+necessary steps to fulfil it.
+
+#### `Processes.cpp`
+
+The object in this file manages processes, which are essentially tasks
+to be completed periodically but not necessarily as often as the
+`loop()` function is called. There is a process that is responsible for
+toggling an LED every second in order to indicate the robot is *alive*.
+Other processes include one that polls the encoders on each motor to
+monitor how far they travelled and another one that potentially makes
+any adjustments necessary to account for errors or motor differences
+based on this information.
+
+#### `State.cpp`
+
+This is a very simple object which essentially only serves as a central
+storage space for various values which may change during runtime. Most
+notably, it contains the current information on each of the holonomic
+motors such as power or total distance travelled, and the state of a
+data transfer.
+
+#### `SDPArduino.cpp`
+
+This is a library based on the last year’s winner team’s firmware which
+declares several low-level utility functions providing convenient
+interface for bidirectional motor movement and halting.
+
+Architecture
+------------
+
+The firmware we’re currently running has changed significantly from the
+source we started with (SDP Group 13 2015). While the concepts haven’t
+changed much, the implementation is significantly different, and the
+majority of changes made have been done to generalise the control
+structures and add powerful flexibility to the firmware’s capabilities.
+
+The notion of ‘Processes’ has been introduced, allowing a structure to
+define a task that must be run at a regular interval. Process structures
+carry around all their own scheduling information, and a pointer to the
+function that needs to be run; This information is mutable, allowing
+state machine behaviour with variable yet defined intervals between
+transitions to be employed. The firmware as it stands uses Processes to
+poll the rotary encoders on the drive motors, and calculate the
+instantaneous speeds of each wheel. A Process was also used to guarantee
+accurate timing for the Milestone 1 communications task.
+
+Similarly, the parsing and execution of commands received over serial is
+handled by the ‘CommandSet’ and ‘SerialCommand’ classes, with function
+pointers being registered in association with the keyword string at
+setup time. These abstractions make it easy to add processes or new
+commands, and isolate potentially buggy functions from each-other
+(though any blocking IO operations will still break functionality)
 
 Command Set
 -----------
