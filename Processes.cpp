@@ -6,138 +6,198 @@
 #include "State.h"
 #include "addresses.h"
 
-/*
-  Toggle LED ~1 time per second; 999 so it is unlikely to coincide
-  with things that actually have to happen once per second
-*/
-static process heartbeat_process = {
-    .last_run   = 0,
-    .interval   = 999,
-    .enabled    = true,
-    .callback   = &Processes::heartbeat
-};
-
-static process poll_encoders_process = {
-    .last_run   = 0,
-    .interval   = 50,
-    .enabled    = true,
-    .callback   = &Processes::poll_encoders
-};
-
-static process check_motors_process = {
-    .last_run   = 0,
-    .interval   = 50,
-    .enabled    = false,
-    .callback   = &Processes::check_motors
-};
-
-process* Processes::collection[PROCESS_COUNT];
-
 void Processes::setup()
 {
-    collection[HEARTBEAT_PROCESS]     = &heartbeat_process;
-    collection[POLL_ENCODERS_PROCESS] = &poll_encoders_process;
-    collection[CHECK_MOTORS_PROCESS]  = &check_motors_process;
+    /* 
+       Dynamically allocate our array of processes. This is 
+       risky on an Arduino with it's meagre 2kb of SRAM, 
+       but it makes registering of processes cleaner,
+       at the expense of setup time.
+
+       Additionally it is important that none of the processes
+       malloc themselves memory whilst registering, as calls
+       to realloc to grow the process table will have to go
+       around that memory, wasting heap space.
+    */
+    num_tasks = 0;
+    ptable_size = DFL_PROCESS_TABLE_SIZE;
+    tasks = (process**) malloc(ptable_size * sizeof(process*));
 }
 
 void Processes::run()
 {
-    for (size_t i = 0; i < PROCESS_COUNT; i++) {
-        if (collection[i]->enabled && millis() >= (collection[i]->last_run + collection[i]->interval)){
-            collection[i]->callback();
-            collection[i]->last_run = millis();
+    for (size_t i = 0; i < num_tasks; i++) {
+        if (tasks[i]->enabled && millis() >= (tasks[i]->last_run + tasks[i]->interval)){
+            tasks[i]->callback(tasks[i]->id);
+            tasks[i]->last_run = millis();
         }
     }
+}
+
+/**
+   Crash if we cannot safely continue
+**/
+void Processes::panic(int error)
+{
+    switch (error) {
+
+    case PROCESS_ERR_OOM:
+        Serial.println(F("!! PANIC: Out of memory!"));
+        break;
+
+    default:
+        Serial.println(F("!! PANIC"));
+    }
+
+    /* Crash (AVR specific) */
+    while (true) asm volatile("nop\n");
+}
+
+
+/**
+   Print UNIX-like process status table
+   Thsi is expensive but should be run occasionally
+**/
+void Processes::status()
+{
+    Serial.println();
+    Serial.println(F("pid \t enable \t interval \t last run \t callback"));
+    Serial.println(F("--- \t ------ \t -------- \t -------- \t --------"));
+
+    for (size_t i=0; i<num_tasks; i++) {
+        
+        Serial.print(tasks[i]->id);
+        Serial.print(F("\t "));
+
+        tasks[i]->enabled ? Serial.print(F("true ")) : Serial.print(F("false"));
+        Serial.print(F("\t\t "));
+        
+        Serial.print(tasks[i]->interval);
+        Serial.print(F("\t\t "));
+        
+        Serial.print(tasks[i]->last_run);
+        Serial.print(F("\t\t "));
+
+        /* Apparently this cast is fine 0_o */
+        Serial.print((uint16_t) tasks[i]->callback, HEX);
+        Serial.println();
+    }
+
+    Serial.println(F("--- \t ------ \t -------- \t -------- \t --------"));
+    Serial.print(F("mem: "));
+    Serial.print(memcheck());
+    Serial.print(F(" free of "));
+    Serial.println(RAMEND - RAMSTART, DEC);
+}
+
+size_t Processes::memcheck()
+{
+    size_t stackptr, heapptr;
+    stackptr = (size_t) malloc(4);
+    heapptr = stackptr;
+    free((void*) stackptr);
+    stackptr = (size_t)(&stackptr);
+
+    return stackptr - heapptr;
 }
 
 
 /***  PROCESS MANAGEMENT ROUTINES  *******************************************************************/
 
 
-void Processes::disable(size_t process_id)
+size_t Processes::add(process* proc)
 {
-    collection[process_id]->enabled = false;
-}
+    /*
+      Register a new process. The process struct should have already been allocated.
+      First process is 0, we always increment from there on.
+      @return: index of process in the process table
+    */
+    if (num_tasks >= ptable_size)
+        grow_table(num_tasks - ptable_size +1);
 
-void Processes::enable(size_t process_id)
-{
-    collection[process_id]->enabled = true;
-}
+    // TODO: Check pointer logic
+    tasks[num_tasks] = proc;
+    proc->id = num_tasks++;
 
-void Processes::change(size_t process_id, void (*callback)(), unsigned long interval)
-{
-    change(process_id, callback);
-    change(process_id, interval);
-}
-
-void Processes::change(size_t process_id, void (*callback)())
-{
-    collection[process_id]->callback = callback;
-}
-
-void Processes::change(size_t process_id, unsigned long interval)
-{
-    collection[process_id]->interval = interval;
+    /* Process id is the number -1 as we zero index */
+    return num_tasks-1; 
 }
 
 
-/***  ACTAUAL PROCESS HANDLERS  **********************************************************************/
-
-void Processes::heartbeat()
+process* Processes::get_by_id(pid_t pid)
 {
-    // Toggles the LED
-    command_set.led();
+    if (pid >= num_tasks)
+        return NULL;
+
+    return tasks[pid];
 }
 
-void Processes::poll_encoders()
+/**
+   Not particularly safe, but useful
+   Get a reference to a process by matching callback
+**/
+process* Processes::get_by_callback(void (*callback)(pid_t))
 {
-    Wire.requestFrom(encoder_i2c_addr, motor_count);
-
-    for (int i = 0; i < motor_count; i++) {
-        byte delta = (byte) Wire.read();
-        if (state.motors[i]->power < 0) {
-            if (delta) {
-                delta = 0xFF - delta;
-            }
-            state.motors[i]->disp -= delta;
-        } else {
-            state.motors[i]->disp += delta;
-        }
-        /*
-          Update speed using the time now and the time we last checked
-        */
-
-        state.motors[i]->speed = (float) delta /
-                                 (((float) millis() -
-                                   (float) collection[POLL_ENCODERS_PROCESS]->last_run) / 1000.0);
-
-        if (state.motors[i]->power < 0) {
-            state.motors[i]->speed *= -1;
+    size_t num_hits = 0;
+    process* found_process;
+    process** tasks_p = tasks;
+    
+    while (tasks_p != NULL){
+        if ((*tasks_p)->callback == callback) {
+            num_hits++;
+            found_process = *tasks_p++;
         }
     }
+
+    return num_hits == 1 ? found_process : NULL;
 }
 
-void Processes::check_motors()
+
+void Processes::grow_table(size_t num)
 {
+    /*
+      Reallocate memory for ther process table, panicking if this does not work.
+    */
+    ptable_size += num;
+    process** new_tasks = (process**) realloc(tasks, ptable_size * sizeof(process*));
 
+    if (new_tasks == NULL) panic(PROCESS_ERR_OOM);
+
+    tasks = new_tasks;
 }
 
 
-void Processes::check_rotation()
+void Processes::disable(pid_t pid)
 {
-    long current_delta = 0;
-
-    for (size_t i = 0; i < motor_count; i++) {
-        current_delta += abs(state.motors[i]->disp - state.initial_displacement[i]);
-    }
-
-    current_delta /= motor_count;
-
-    if (current_delta >= state.rotation_delta) {
-        #ifdef FW_DEBUG
-        Serial.println("Ending rotation");
-        #endif
-        motorAllStop();
-        processes.disable(CHECK_MOTORS_PROCESS);
-    }
+    tasks[pid]->enabled = false;
 }
+
+void Processes::enable(pid_t pid)
+{
+    tasks[pid]->enabled = true;
+}
+
+/*
+ *  Update a process' callback and/or interval by id reference
+ *  @return: -1 if failure, 0 if success
+ */
+
+int Processes::change(pid_t pid, void (*callback)(pid_t), unsigned long interval)
+{
+    return change(pid, callback) | change(pid, interval);
+}
+
+int Processes::change(pid_t pid, void (*callback)(pid_t))
+{
+    if (pid >= num_tasks) return -1;
+    tasks[pid]->callback = callback;
+    return 0;
+}
+
+int Processes::change(pid_t pid, unsigned long interval)
+{
+    if (pid >= num_tasks) return -1;
+    tasks[pid]->interval = interval;
+    return 0;
+}
+

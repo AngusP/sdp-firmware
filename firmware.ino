@@ -11,21 +11,24 @@
 
 #include <Wire.h>
 #include <Arduino.h>
-#include <alloca.h>
 
 #include "CommandSet.h"
 #include "State.h"
 #include "Processes.h"
 #include "SDPArduino.h"
 #include "addresses.h"
+#include "robot.h"
 
 State state;
 CommandSet command_set;
 Processes processes;
+Robot bot;
+
 
 /***
-    LOOP & SETUP
+    SETUP
 ***/
+
 void setup()
 {
     Serial.begin(115200);
@@ -35,9 +38,15 @@ void setup()
     processes.setup();
     SDPsetup();
 
+    bot.register_processes();
+
     delay(500);
     Serial.println(F("STARTUP"));
 }
+
+/***
+    LOOP
+***/
 
 void loop()
 {

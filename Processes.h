@@ -4,44 +4,59 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#define PROCESS_COUNT 3
-#define HEARTBEAT_PROCESS 0
-#define POLL_ENCODERS_PROCESS 1
-#define CHECK_MOTORS_PROCESS 2
+#define DFL_PROCESS_TABLE_SIZE 5
+
+/* Error codes for panics */
+#define PROCESS_ERR_OOM 0
+
 /*
  *  Process structure, for defining a clock synchronous process
  */
 
+typedef size_t pid_t;
+
 typedef struct {
+    size_t id;
     unsigned long last_run, interval;
     bool enabled;
-    void (*callback)();
+    void (*callback)(pid_t);
 } process;
 
+/*  
+ *  Process class, manipulates and executes processes
+ */
 
+class Processes {
 
-class Processes
-{
+public:
+    void setup();
+    void run();
+    size_t add(process* proc);
+    
+    process* get_by_id(pid_t pid);
+    process* get_by_callback(void (*callback)(pid_t));
 
-    public:
-        void setup();
+    void enable(pid_t pid);
+    void disable(pid_t pid);
 
-        static void run();
-        static void enable(size_t process_id);
-        static void disable(size_t process_id);
+    void status();
+    
+    int change(size_t pid, void (*callback)(pid_t), unsigned long interval);
+    int change(size_t pid, void (*callback)(pid_t));
+    int change(size_t pid, unsigned long interval);
+    
+protected:
+    process** tasks;
+    void panic(int error);
+    
+private:
+    size_t num_tasks;               // Number of processes in tasks
+    size_t ptable_size;             // Size of space allocated to tasks
+    void grow_table(size_t num);
 
-        static void change(size_t process_id, void (*callback)(), unsigned long interval);
-        static void change(size_t process_id, void (*callback)());
-        static void change(size_t process_id, unsigned long interval);
+    /* helpers */
+    size_t memcheck();
 
-        static void heartbeat();
-        static void poll_encoders();
-        static void check_motors();
-        static void milestone_1();
-        static void check_rotation();
-
-    private:
-        static process* collection[PROCESS_COUNT];
 };
 
 extern Processes processes;

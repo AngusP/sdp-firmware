@@ -9,36 +9,35 @@
    Generic motor structure, carries around all needed information.
 
    IT IS ASSUMED that the encoders are connected in the same order
-   that the motors are added to the motors array below.
+   that the motors are added to the motors array.
 */
-struct motor {
-    int port, power, direction;
+typedef struct {
+    int port;
+    int power;
+    int direction;
     long disp;
     float speed;
-};
+    float delta_speed;
+    unsigned long last_write;
+} motor;
 
-class State
-{
-    public:
-        void setup();
+class State {
 
-        int battery;
-        uint8_t status_led, status_led_pin;
-        float heading;
+public:
+    void setup();
+    
+    int battery;
+    uint8_t status_led, status_led_pin;
+    float heading;
+    
+    motor* motors[motor_count];
+    
+    // Rotation stuff
+    long initial_displacement[motor_count];
+    long rotation_delta;
 
-        struct motor* motors[motor_count];
-
-        /* milestone hoops: */
-        byte receive_bytes[250];
-        int send_frequency, num_bytes, sending_index;
-        bool receiving;
-        bool sending;
-        unsigned long last_send;
-        long time_period;
-
-        // Rotation stuff
-        long initial_displacement[motor_count];
-        long rotation_delta;
+    float stall_threshold;
+    unsigned long stall_spool_time;
 };
 
 extern State state;
