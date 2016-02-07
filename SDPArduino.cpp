@@ -38,6 +38,8 @@ void write_powers()
         #endif
         if(state.motors[i]->power < 0){
             motorBackward(state.motors[i]->port, abs(state.motors[i]->power));
+        } else if (state.motors[i]->power == 0) {
+            motorBrake(state.motors[i]->port, 255);
         } else {
             motorForward(state.motors[i]->port,  abs(state.motors[i]->power));
         }
@@ -99,24 +101,16 @@ void motorBrake(int motorNum, int motorPower) { //Makes Motor motorNum brake at 
     if (motorPower < 0){ //Lowest power possible = 0.
       motorPower = 0;
     }
-    if (motorPower > 100) {//Highest power possible = 100.
-      motorPower = 100;
+    if (motorPower > 255) {//Highest power possible = 255.
+      motorPower = 255;
     }
     int motorMode = 1; //Mode 1 is Brake ??
     byte motor1 = motorNum<<5 | 24 | motorMode<<1 ;//Build Command Byte
-    byte motor2 = int(motorPower * 2.55);
+    byte motor2 = motorPower;
     uint8_t sender[2] = {motor1, motor2};
     Wire.beginTransmission(MotorBoardI2CAddress); //open I2C communation to Motor Board.
     Wire.write(sender,2);                    //send data. 
     byte fred = Wire.endTransmission();		//end I2C communcation.
-  }
-}
-
-void brake_motors()
-{
-  for(int i=0; i < motor_count; i++){
-    state.motors[i]->power = 0;
-    motorBrake(state.motors[i]->port, 100);
   }
 }
 

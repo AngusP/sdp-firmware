@@ -85,29 +85,16 @@ void CommandSet::help()
 void CommandSet::move()
 {
     int new_powers[motor_count];
-    int allzero = 0;
 
     for (int i=0; i < motor_count; i++){
         new_powers[i] = atoi(sCmd.next());
-        /* If all zeros, stop motors */
-        allzero = allzero || new_powers[i];
-        /* Apply correction & direction here */
+        /* Apply direction correction here */
         new_powers[i] *= state.motors[i]->direction;
     }
 
     #ifdef FW_DEBUG
     Serial.println(F("Moving"));
     #endif
-
-    /* Stop faster if we've been told to */
-    if(!allzero) {
-        #ifdef FW_DEBUG
-        Serial.println(F("Quickstop"));
-        #endif
-        write_powers(0);
-        brake_motors();
-        return;
-    }
         
     /* update speeds of all drive motors */
     for(int i=0; i < motor_count; i++){
