@@ -16,7 +16,7 @@
 typedef size_t pid_t;
 
 typedef struct {
-    size_t id;
+    pid_t id;
     unsigned long last_run, interval;
     bool enabled;
     void (*callback)(pid_t);

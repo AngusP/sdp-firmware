@@ -39,6 +39,9 @@ public:
     float stall_gradient;
     float stall_constant;
     unsigned int stall_count;
+
+    void (*rot_func)(size_t);
+    void (*mot_func)(size_t);
 };
 
 extern State state;

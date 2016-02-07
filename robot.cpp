@@ -49,7 +49,6 @@ process check_motors = {
 };
 
 
-
 /*** 
      PROCESS FUNCTIONS
 ***/
@@ -142,6 +141,7 @@ void check_rotation_f(pid_t pid)
         #endif
         motorAllStop();
         processes.disable(pid);
+        processes.change(pid, state.mot_func);
     }
 }
 
@@ -154,6 +154,9 @@ void Robot::register_processes()
     processes.add(&update_motors);
     processes.add(&check_motors);
     processes.add(&heartbeat);
+
+    state.rot_func = &check_rotation_f;
+    state.mot_func = &check_motors_f;
 }
 
 
