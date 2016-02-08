@@ -1,5 +1,5 @@
-Firmware
-========
+Firmware User Guide
+===================
 
 Compiling & Uploading
 ---------------------
@@ -67,8 +67,8 @@ The command set that the robot currently recognises is documented in the
 Technical Specification.
 
 
-Firmware
-========
+Firmware Technical Spec
+=======================
 
 Important Source Files
 ----------------------
@@ -99,12 +99,7 @@ necessary steps to fulfil it.
 
 The object in this file manages processes, which are essentially tasks
 to be completed periodically but not necessarily as often as the
-`loop()` function is called. There is a process that is responsible for
-toggling an LED every second in order to indicate the robot is *alive*.
-Other processes include one that polls the encoders on each motor to
-monitor how far they travelled and another one that potentially makes
-any adjustments necessary to account for errors or motor differences
-based on this information.
+`loop()` function is called.
 
 #### `State.cpp`
 
@@ -113,6 +108,15 @@ storage space for various values which may change during runtime. Most
 notably, it contains the current information on each of the holonomic
 motors such as power or total distance travelled, and the state of a
 data transfer.
+
+#### `robot.cpp`
+
+Contains the code that is run clock-synchronously by Processes – There
+is a process that is responsible for toggling an LED every second in
+order to indicate the robot is *alive*. Other processes include one that
+polls the encoders on each motor to monitor how far they travelled and
+another one that potentially makes any adjustments necessary to account
+for errors or motor differences based on this information.
 
 #### `SDPArduino.cpp`
 
@@ -126,8 +130,8 @@ Architecture
 The firmware we’re currently running has changed significantly from the
 source we started with (SDP Group 13 2015). While the concepts haven’t
 changed much, the implementation is significantly different, and the
-majority of changes made have been done to generalise the control
-structures and add powerful flexibility to the firmware’s capabilities.
+majority of changes have been made to generalise the control structures
+and add powerful flexibility to the firmware’s capabilities.
 
 The notion of ‘Processes’ has been introduced, allowing a structure to
 define a task that must be run at a regular interval. Process structures
@@ -149,50 +153,85 @@ commands, and isolate potentially buggy functions from each-other
 Command Set
 -----------
 
-`ping\n`  
+All commands should be sent with a trailing newline, `\n`
+
+Ping  
 This is the simplest command the firmware responds to and should
 immediately receive a `pong` back.
 
-`L\n`  
+send: `ping`
+
+gets: `pong`
+
+Toggle LED  
 Toggles the LED on/off. This will get overridden pretty quickly by the
 heartbeat blinking, but you can verify your connection this way too.
 
-`M %d1 %d2 %d3\n`  
+send: `L\n`
+
+gets: nothing
+
+Move  
 Tells the robot to apply power to the motors in the order 1  \>  2  \> 
-3. Valid range is -255 to 255 inclusive. `M 0 0 0\n` will stop the
-robot.
+3. Valid range is -255 to 255 inclusive. `M 0 0 0` will stop the robot.
 
-Gets the reply `Moving\n 0: d1 1: d2 2: d3`
+send: `M %d1 %d2 %d3`
 
-`S\n`  
+gets: `A`
+
+debug: `Moving\n 0: d1 1: d2 2: d3`
+
+Force Stop  
 Force a stop. The robot will remove power from the motors immediately,
 without trying to do any clever \`quick stop\` by braking the motors.
 
-Will get the reply `Force stopping`
+send: `S`
 
-`Speeds\n`  
+gets: `A`
+
+debug: `Force stopping`
+
+Motor Speeds  
 Will print the instantaneous speeds of all three drive motors in
 bogounits (encoder stops per second) in the form:
 
-`0: n.nn 1: n.nn 2: n.nn`
+send: `speeds`
 
-`kick %d1 %d2\n`  
-Kicks with power `d1` (motor power, -255 to 255 inclusive) for `d2`
-milliseconds.
+gets: `0: n.nn 1: n.nn 2: n.nn`
 
-`rotate %d1 %d2\n`  
+Grabbing  
+Opens or closes the grabber, depending on the argument given
+
+send: `grab <0/1>`
+
+gets: `A`
+
+debug: `grabbing <0/1>\n done`
+
+Rotating  
 Rotates at `d1` power (-255 to 255 inclusive) until the encoders have
 gone through `d2` stops (0+) on average. This can be used to get fairly
 precice rotation but will need calibration and depends on battery life &
-power as the bot currently overrotates somewhat.
+power.
 
-`help\n`  
+send: `rotate %d1 %d2`
+
+gets: `A`
+
+debug: `rotating at %d1 to %d2 stops`
+
+Help  
 Prints the commands that the robot is listening for; this is always
 correct as it is generated on-the-fly from the Command Set parsing
 class. It won’t print how many arguments it expects, but is useful for
 checking spelling or troubleshooting a `N` (NACK).
 
-Expected output:
+The help command can also be used to verify that the command set is the
+one you’re expecting.
 
-    Valid input commands: (some have arguments)
-    L\n ping\n help\n M\n S\n Speeds\n kick\n rotate
+send: `help`
+
+get: `Valid input commands: (some have arguments)`  
+`L\n ping\n help\n M\n S\n speeds\n kick\n grab\n rotate`
+
+
