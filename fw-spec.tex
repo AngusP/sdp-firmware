@@ -13,15 +13,17 @@ This is the main file which contains the \texttt{void setup()} and \texttt{void 
 
 \paragraph{\texttt{CommandSet.cpp}} This object initializes \texttt{SerialCommand} and associates each of the robot's commands with one of its methods, which then perform the necessary steps to fulfil it.
 
-\paragraph{\texttt{Processes.cpp}} The object in this file manages processes, which are essentially tasks to be completed periodically but not necessarily as often as the \texttt{loop()} function is called. There is a process that is responsible for toggling an LED every second in order to indicate the robot is \textit{alive}. Other processes include one that polls the encoders on each motor to monitor how far they travelled and another one that potentially makes any adjustments necessary to account for errors or motor differences based on this information.
+\paragraph{\texttt{Processes.cpp}} The object in this file manages processes, which are essentially tasks to be completed periodically but not necessarily as often as the \texttt{loop()} function is called. 
 
 \paragraph{\texttt{State.cpp}} This is a very simple object which essentially only serves as a central storage space for various values which may change during runtime. Most notably, it contains the current information on each of the holonomic motors such as power or total distance travelled, and the state of a data transfer.
+
+\paragraph{\texttt{robot.cpp}} Contains the code that is run clock-synchronously by Processes -- There is a process that is responsible for toggling an LED every second in order to indicate the robot is \textit{alive}. Other processes include one that polls the encoders on each motor to monitor how far they travelled and another one that potentially makes any adjustments necessary to account for errors or motor differences based on this information.
 
 \paragraph{\texttt{SDPArduino.cpp}} This is a library based on the last year's winner team's firmware which declares several low-level utility functions providing convenient interface for bidirectional motor movement and halting.
 
 \subsection{Architecture}
 
-The firmware we're currently running has changed significantly from the source we started with (SDP Group 13 2015). While the concepts haven't changed much, the implementation is significantly different, and the majority of changes made have been done to generalise the control structures and add powerful flexibility to the firmware's capabilities.
+The firmware we're currently running has changed significantly from the source we started with (SDP Group 13 2015). While the concepts haven't changed much, the implementation is significantly different, and the majority of changes have been made to generalise the control structures and add powerful flexibility to the firmware's capabilities.
 
 The notion of `Processes' has been introduced, allowing a structure to define a task that must be run at a regular interval. Process structures carry around all their own scheduling information, and a pointer to the function that needs to be run; This information is mutable, allowing state machine behaviour with variable yet defined intervals between transitions to be employed. The firmware as it stands uses Processes to poll the rotary encoders on the drive motors, and calculate the instantaneous speeds of each wheel. A Process was also used to guarantee accurate timing for the Milestone 1 communications task.
 
@@ -29,38 +31,82 @@ Similarly, the parsing and execution of commands received over serial is handled
 
 \subsection{Command Set}
 
-\verb|ping\n|\\
-This is the simplest command the firmware responds to and should immediately receive a \verb|pong| back.
+All commands should be sent with a trailing newline, \verb|\n|
 
-\verb|L\n|\\
-Toggles the LED on/off. This will get overridden pretty quickly by the heartbeat blinking, but you can verify your connection this way too.
+\begin{description}
 
-\verb|M %d1 %d2 %d3\n|\\
-Tells the robot to apply power to the motors in the order 1 $>$ 2 $>$ 3. Valid range is -255 to 255 inclusive. \verb|M 0 0 0\n| will stop the robot.
+\item[Ping]
+  This is the simplest command the firmware responds to and should immediately receive a \verb|pong| back.
 
-Gets the reply \verb|Moving\n 0: d1 1: d2 2: d3|
+  send: \verb|ping|
+  
+  gets: \verb|pong|
+  
 
-\verb|S\n|\\
-Force a stop. The robot will remove power from the motors immediately, without trying to do any clever `quick stop` by braking the motors.
+\item[Toggle LED]
+  Toggles the LED on/off. This will get overridden pretty quickly by the heartbeat blinking, but you can verify your connection this way too.
 
-Will get the reply \verb|Force stopping|
+  send: \verb|L\n|
+  
+  gets: nothing
 
-\verb|Speeds\n|\\
-Will print the instantaneous speeds of all three drive motors in bogounits (encoder stops per second) in the form:
+  
+\item[Move] 
+  Tells the robot to apply power to the motors in the order 1 $>$ 2 $>$ 3. Valid range is -255 to 255 inclusive. \verb|M 0 0 0| will stop the robot.
 
-\verb|0: n.nn 1: n.nn 2: n.nn|
+  send: \verb|M %d1 %d2 %d3|
+  
+  gets: \verb|A|
 
-\verb|kick %d1 %d2\n|\\
-Kicks with power \texttt{d1} (motor power, -255 to 255 inclusive) for \texttt{d2} milliseconds.
+  debug: \verb|Moving\n 0: d1 1: d2 2: d3|
 
-\verb|rotate %d1 %d2\n|\\
-Rotates at \texttt{d1} power (-255 to 255 inclusive) until the encoders have gone through \texttt{d2} stops (0+) on average. This can be used to get fairly precice rotation but will need calibration and depends on battery life \& power as the bot currently overrotates somewhat.
+  
+\item[Force Stop]
+  Force a stop. The robot will remove power from the motors immediately, without trying to do any clever `quick stop` by braking the motors.
+  
+  send: \verb|S|
 
-\verb|help\n|\\
-Prints the commands that the robot is listening for; this is always correct as it is generated on-the-fly from the Command Set parsing class. It won't print how many arguments it expects, but is useful for checking spelling or troubleshooting a \texttt{N} (NACK).
+  gets: \verb|A|
 
-Expected output:
-\begin{verbatim}
-Valid input commands: (some have arguments)
-L\n ping\n help\n M\n S\n Speeds\n kick\n rotate
-\end{verbatim}
+  debug: \verb|Force stopping|
+
+  
+\item[Motor Speeds]
+  Will print the instantaneous speeds of all three drive motors in bogounits (encoder stops per second) in the form:
+
+  send: \verb|speeds|
+  
+  gets: \verb|0: n.nn 1: n.nn 2: n.nn|
+
+
+\item[Grabbing]
+  Opens or closes the grabber, depending on the argument given
+
+  send: \verb|grab <0/1>|
+
+  gets: \verb|A|
+
+  debug: \verb|grabbing <0/1>\n done|
+
+
+\item[Rotating]
+  Rotates at \texttt{d1} power (-255 to 255 inclusive) until the encoders have gone through \texttt{d2} stops (0+) on average. This can be used to get fairly precice rotation but will need calibration and depends on battery life \& power.
+
+  send: \verb|rotate %d1 %d2|
+
+  gets: \verb|A|
+
+  debug: \verb|rotating at %d1 to %d2 stops|
+
+
+\item[Help]
+  Prints the commands that the robot is listening for; this is always correct as it is generated on-the-fly from the Command Set parsing class. It won't print how many arguments it expects, but is useful for checking spelling or troubleshooting a \texttt{N} (NACK).
+
+  The help command can also be used to verify that the command set is the one you're expecting.
+
+  send: \verb|help|
+
+  get: \verb|Valid input commands: (some have arguments)|\\
+  \verb|L\n ping\n help\n M\n S\n speeds\n kick\n grab\n rotate|
+
+\end{description}
