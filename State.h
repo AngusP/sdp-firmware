@@ -2,6 +2,7 @@
 #define FIRMWARE_STATE_H
 
 #include <Arduino.h>
+#include "Processes.h"
 
 #define motor_count 3
 
@@ -35,13 +36,12 @@ public:
     // Rotation stuff
     long initial_displacement[motor_count];
     long rotation_delta;
-
+    process* rotation_process;
+    
     float stall_gradient;
     float stall_constant;
     unsigned int stall_count;
 
-    void (*rot_func)(size_t);
-    void (*mot_func)(size_t);
 };
 
 extern State state;

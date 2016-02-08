@@ -217,10 +217,7 @@ void CommandSet::rotate()
 
     state.rotation_delta = delta;
 
-    // TODO: Find a safer way to do this
-    process* motors_process = processes.get_by_callback(state.mot_func);
-    processes.change(motors_process->id, state.rot_func, 60);
-    processes.enable(motors_process->id);
+    processes.enable((state.rotation_process)->id);
 
     write_powers();
 }

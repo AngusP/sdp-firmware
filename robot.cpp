@@ -48,6 +48,19 @@ process check_motors = {
     .callback   = &check_motors_f
 };
 
+/*
+  Run through specified rotation
+*/
+void exec_rotation_f(pid_t);
+process exec_rotation = {
+    .id         = 0,
+    .last_run   = 0,
+    .interval   = 60,
+    .enabled    = false,
+    .callback   = &exec_rotation_f
+};
+
+
 
 /*** 
      PROCESS FUNCTIONS
@@ -109,8 +122,8 @@ void check_motors_f(pid_t pid)
 
         if (fabsf(state.motors[i]->speed) < spd_threshold &&
             abs(state.motors[i]->power) >= 76) {
-            //Serial.print(F("stall on "));
-            //Serial.println(i);
+            Serial.print(F("stall on "));
+            Serial.println(i);
             state.stall_count += 10;
         } else {
             if (state.stall_count > 0) state.stall_count--;
@@ -122,10 +135,11 @@ void check_motors_f(pid_t pid)
         write_powers(0);
         state.stall_count = 0;
     }
+    
 }
 
 
-void check_rotation_f(pid_t pid)
+void exec_rotation_f(pid_t pid)
 {
     long current_delta = 0;
 
@@ -141,7 +155,6 @@ void check_rotation_f(pid_t pid)
         #endif
         motorAllStop();
         processes.disable(pid);
-        processes.change(pid, state.mot_func);
     }
 }
 
@@ -154,9 +167,9 @@ void Robot::register_processes()
     processes.add(&update_motors);
     processes.add(&check_motors);
     processes.add(&heartbeat);
+    processes.add(&exec_rotation);
 
-    state.rot_func = &check_rotation_f;
-    state.mot_func = &check_motors_f;
+    state.rotation_process = &exec_rotation;
 }
 
 
