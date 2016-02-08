@@ -65,6 +65,8 @@ void Processes::status()
     Serial.println();
     Serial.println(F("pid \t enable \t interval \t last run \t callback \t label"));
     Serial.println(F("--- \t ------ \t -------- \t -------- \t -------- \t -----"));
+    Serial.flush();
+    delay(10);
 
     for (size_t i=0; i<num_tasks; i++) {
         
@@ -86,6 +88,8 @@ void Processes::status()
 
         Serial.print(tasks[i]->label);
         Serial.println();
+        Serial.flush();
+        delay(10);
     }
 
     Serial.println(F("--- \t ------ \t -------- \t -------- \t -------- \t -----"));
@@ -93,6 +97,8 @@ void Processes::status()
     Serial.print(memcheck());
     Serial.print(F(" free of "));
     Serial.println(RAMEND - RAMSTART +1, DEC);
+    Serial.flush();
+    delay(10);
 }
 
 size_t Processes::memcheck()
