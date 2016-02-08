@@ -15,49 +15,57 @@
 /*
   Blink status LED every second or so
 */
+const char heartbeat_l[] = "heartbeat";
 void heartbeat_f(pid_t);
 process heartbeat = {
     .id         = 0,
     .last_run   = 0,
     .interval   = 999,
     .enabled    = true,
-    .callback   = &heartbeat_f
+    .callback   = &heartbeat_f,
+    .label      = heartbeat_l
 };
 
 /*
   Rapidly check motor rotations and speeds
 */
+const char update_motors_l[] = "update motors";
 void update_motors_f(pid_t);
 process update_motors = {
     .id         = 0,
     .last_run   = 0,
     .interval   = 50,
     .enabled    = true,
-    .callback   = &update_motors_f
+    .callback   = &update_motors_f,
+    .label      = update_motors_l
 };
 
 /*
   Instantaneously correct motor speeds
 */
+const char check_motors_l[] = "check motors";
 void check_motors_f(pid_t);
 process check_motors = {
     .id         = 0,
     .last_run   = 0,
     .interval   = 50,
-    .enabled    = true,
-    .callback   = &check_motors_f
+    .enabled    = false,
+    .callback   = &check_motors_f,
+    .label      = check_motors_l
 };
 
 /*
   Run through specified rotation
 */
+const char exec_rotation_l[] = "exec rotate";
 void exec_rotation_f(pid_t);
 process exec_rotation = {
     .id         = 0,
     .last_run   = 0,
     .interval   = 60,
     .enabled    = false,
-    .callback   = &exec_rotation_f
+    .callback   = &exec_rotation_f,
+    .label      = exec_rotation_l
 };
 
 

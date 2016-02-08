@@ -63,8 +63,8 @@ void Processes::panic(int error)
 void Processes::status()
 {
     Serial.println();
-    Serial.println(F("pid \t enable \t interval \t last run \t callback"));
-    Serial.println(F("--- \t ------ \t -------- \t -------- \t --------"));
+    Serial.println(F("pid \t enable \t interval \t last run \t callback \t label"));
+    Serial.println(F("--- \t ------ \t -------- \t -------- \t -------- \t -----"));
 
     for (size_t i=0; i<num_tasks; i++) {
         
@@ -82,10 +82,13 @@ void Processes::status()
 
         /* Apparently this cast is fine 0_o */
         Serial.print((uint16_t) tasks[i]->callback, HEX);
+        Serial.print(F("\t\t "));
+
+        Serial.print(tasks[i]->label);
         Serial.println();
     }
 
-    Serial.println(F("--- \t ------ \t -------- \t -------- \t --------"));
+    Serial.println(F("--- \t ------ \t -------- \t -------- \t -------- \t -----"));
     Serial.print(F("mem: "));
     Serial.print(memcheck());
     Serial.print(F(" free of "));

@@ -20,6 +20,7 @@ typedef struct {
     unsigned long last_run, interval;
     bool enabled;
     void (*callback)(pid_t);
+    const char *label;
 } process;
 
 /*  
