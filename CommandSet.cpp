@@ -92,6 +92,7 @@ void CommandSet::move()
         new_powers[i] *= state.motors[i]->direction;
     }
 
+    Serial.println(F("A"));
     #ifdef FW_DEBUG
     Serial.println(F("Moving"));
     #endif
@@ -105,6 +106,7 @@ void CommandSet::move()
 
 void CommandSet::stop()
 {
+    Serial.println(F("A"));
     #ifdef FW_DEBUG
     Serial.println(F("Force stopping"));
     #endif
@@ -140,6 +142,7 @@ void CommandSet::pixels()
     byte green = (byte) atoi(sCmd.next());
     byte blue  = (byte) atoi(sCmd.next());
 
+    Serial.println(F("A"));
     #ifdef FW_DEBUG
     Serial.print(F("Set pixel colour to "));
     Serial.print(red,HEX);
@@ -162,6 +165,7 @@ void CommandSet::grab()
     const int port          = 1;
     const int motor_power   = 255;
 
+    Serial.println(F("A"));
     #ifdef FW_DEBUG
     Serial.print(F("grabbing "));
     Serial.println(direction);
@@ -182,13 +186,14 @@ void CommandSet::grab()
     motorStop(port);
 
     #ifdef FW_DEBUG
-    Serial.println(F("done "));
+    Serial.println(F("done"));
     #endif
 }
 
 
 void CommandSet::kick()
 {
+    Serial.println(F("A"));
     #ifdef FW_DEBUG
     Serial.println(F("kicking"));
     #endif
@@ -202,12 +207,13 @@ void CommandSet::rotate()
     const int motor_power   = atoi(sCmd.next());
     const long delta        = atoi(sCmd.next());
 
+    Serial.println(F("A"));
     #ifdef FW_DEBUG
-    Serial.print(F("Going to rotate at "));
+    Serial.print(F("rotting at "));
     Serial.print(motor_power);
-    Serial.print(F(" power until we rotate "));
+    Serial.print(F(" to "));
     Serial.print(delta);
-    Serial.println(" units.");
+    Serial.println(F(" stops"));
     #endif
 
     for (size_t i=0; i < motor_count; i++){
@@ -250,7 +256,7 @@ void CommandSet::updateStall()
     float new_grad = (float) atof(sCmd.next());
     float new_cons = (float) atof(sCmd.next());
 
-    Serial.print(F("New parameters are "));
+    Serial.print(F("New stall params are "));
     Serial.print(new_grad);
     Serial.print(F(" & "));
     Serial.println(new_cons);
