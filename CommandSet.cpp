@@ -173,13 +173,13 @@ void CommandSet::grab()
 
     if(direction){
         /* close */
-        motorForward(port,  motor_power);
+        motorBackward(port,  motor_power);
         delay(1500);
     } else {
         /* open */
-        motorBackward(port, motor_power);
-        delay(1500);
         motorForward(port, motor_power);
+        delay(1500);
+        motorBackward(port, motor_power);
         delay(700);
     }
 
