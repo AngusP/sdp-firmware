@@ -44,7 +44,7 @@ process check_motors = {
     .id         = 0,
     .last_run   = 0,
     .interval   = 50,
-    .enabled    = false,
+    .enabled    = true,
     .callback   = &check_motors_f
 };
 
@@ -122,15 +122,13 @@ void check_motors_f(pid_t pid)
 
         if (fabsf(state.motors[i]->speed) < spd_threshold &&
             abs(state.motors[i]->power) >= 76) {
-            Serial.print(F("stall on "));
-            Serial.println(i);
             state.stall_count += 10;
-        } else {
-            if (state.stall_count > 0) state.stall_count--;
         }
     }
 
-    if (state.stall_count > 240) {
+    if (state.stall_count > 0) state.stall_count--;
+
+    if (state.stall_count > 200) {
         Serial.println(F("STALL!"));
         write_powers(0);
         state.stall_count = 0;
