@@ -15,8 +15,10 @@
 typedef struct {
     int port;
     int power;
+    int desired_power;
     int direction;
     long disp;
+    int disp_delta;
     float speed;
     float delta_speed;
     unsigned long last_write;

@@ -3,31 +3,37 @@
 #define FW_DEBUG
 
 static motor motor_0 = {
-    .port         = 2,
-    .power        = 0,
-    .direction    = 1,
-    .disp         = 0,
-    .speed        = 0.0,
-    .delta_speed  = 0.0,
-    .last_write   = 0
+    .port           = 2,
+    .power          = 0,
+    .desired_power  = 0,
+    .direction      = 1,
+    .disp           = 0,
+    .disp_delta     = 0,
+    .speed          = 0.0,
+    .delta_speed    = 0.0,
+    .last_write     = 0
 };
 static motor motor_1 = {
-    .port         = 5,
-    .power        = 0,
-    .direction    = 1,
-    .disp         = 0,
-    .speed        = 0.0,
-    .delta_speed  = 0.0,
-    .last_write   = 0
+    .port           = 5,
+    .power          = 0,
+    .desired_power  = 0,
+    .direction      = 1,
+    .disp           = 0,
+    .disp_delta     = 0,
+    .speed          = 0.0,
+    .delta_speed    = 0.0,
+    .last_write     = 0
 };
 static motor motor_2 = {
-    .port         = 4,
-    .power        = 0,
-    .direction    = 1,
-    .disp         = 0,
-    .speed        = 0.0,
-    .delta_speed  = 0.0,
-    .last_write   = 0
+    .port           = 4,
+    .power          = 0,
+    .desired_power  = 0,
+    .direction      = 1,
+    .disp           = 0,
+    .disp_delta     = 0,
+    .speed          = 0.0,
+    .delta_speed    = 0.0,
+    .last_write     = 0
 };
 
 void State::setup()
