@@ -198,7 +198,11 @@ void CommandSet::kick()
     Serial.println(F("kicking"));
     #endif
 
-    //TODO
+    digitalWrite(6, HIGH);
+    delay(550);
+    digitalWrite(6, LOW);
+
+    Serial.println(F("done"));
 }
 
 
