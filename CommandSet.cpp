@@ -100,6 +100,7 @@ void CommandSet::move()
     /* update speeds of all drive motors */
     for(int i=0; i < motor_count; i++){
         state.motors[i]->power = state.motors[i]->desired_power = new_powers[i];
+        state.motors[i]->delta_disp = 0;
     }
     write_powers();
 }

@@ -183,13 +183,13 @@ void check_motors_f(pid_t pid)
         mtr = state.motors[i];
 
         /* 
-           re-use the err variable to get the derivative of the 
-           error function w.r.t the ith dimension.
+           re-use the err variable to get the derivative of 
+           the error function w.r.t the ith dimension.
         */
         err_rd[i] /= d_r_norm;
         
         new_powers[i] = c_unit[i] - (learning_rate * err_rd[i]);
-        np_largest = fabs(np_largest) < fabs(new_powers[i]) ? new_powers[i] : np_largest;
+        np_largest = np_largest < fabs(new_powers[i]) ? fabs(new_powers[i]) : np_largest;
     }
 
     for (i=0; i < motor_count; i++) {
