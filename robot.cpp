@@ -49,8 +49,8 @@ void check_motors_f(pid_t);
 process check_motors = {
     .id         = 0,
     .last_run   = 0,
-    .interval   = 150,
-    .enabled    = false,
+    .interval   = 50,
+    .enabled    = true,
     .callback   = &check_motors_f,
     .label      = check_motors_l
 };
@@ -147,6 +147,9 @@ void check_motors_f(pid_t pid)
             largest_power = mtr->desired_power;
     }
 
+    if (d_norm == 0)
+        return;
+
     c_norm = sqrt(c_norm);
     r_norm = sqrt(r_norm);
     d_norm = sqrt(d_norm);
@@ -192,6 +195,7 @@ void check_motors_f(pid_t pid)
     for (i=0; i < motor_count; i++) {
         mtr = state.motors[i];
         mtr->power = largest_power * (int) round(new_powers[i] / np_largest);
+        mtr->disp_delta = 0;
     }
     
     write_powers();
