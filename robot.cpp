@@ -49,8 +49,8 @@ void check_motors_f(pid_t);
 process check_motors = {
     .id         = 0,
     .last_run   = 0,
-    .interval   = 50,
-    .enabled    = false,
+    .interval   = 500,
+    .enabled    = true,
     .callback   = &check_motors_f,
     .label      = check_motors_l
 };
@@ -126,28 +126,33 @@ void check_motors_f(pid_t pid)
 {
     /* Gradient Descent Motor Error correction */
 
-    const double learning_rate = 0.1;
+    const double learning_rate = 0.05;
     
     motor* mtr;
-    int i, largest_power = 0;
+    int i;
     double c_norm = 0.0,
            r_norm = 0.0,
            d_norm = 0.0,
-           d_r_norm = 0.0;
+           d_r_norm = 0.0,
+           largest_power = 0.0;
 
+    int allzero = 0;
+    
     for (i=0; i < motor_count; i++) {
         mtr = state.motors[i];
 
+        allzero = allzero || mtr->desired_power;
+        
         /* Calculate norms for our three vectors */
         c_norm += pow((double) mtr->power, 2.0);
         r_norm += pow((double) mtr->disp_delta, 2.0);
         d_norm += pow((double) mtr->desired_power, 2.0);
 
         if (abs(largest_power) < abs(mtr->desired_power))
-            largest_power = mtr->desired_power;
+            largest_power = (double) mtr->desired_power;
     }
 
-    if (d_norm == 0)
+    if (allzero == 0)
         return;
 
     c_norm = sqrt(c_norm);
@@ -192,9 +197,32 @@ void check_motors_f(pid_t pid)
         np_largest = np_largest < fabs(new_powers[i]) ? fabs(new_powers[i]) : np_largest;
     }
 
+    Serial.println(F("Error:"));
+    Serial.print(F("r: "));
+    for (i=0; i < motor_count; i++) {
+        Serial.print(r_unit[i]);
+        Serial.print(" ");
+    }
+    Serial.println();
+    Serial.print(F("err: "));
+    for (i=0; i < motor_count; i++) {
+        Serial.print(err_rd[i]);
+        Serial.print(" ");
+    }
+    Serial.println();
+    Serial.print(F("new: "));
+    for (i=0; i < motor_count; i++) {
+        Serial.print(new_powers[i]);
+        Serial.print(" ");
+    }
+    Serial.println();
+    Serial.print(F("Largest: "));
+    Serial.println(np_largest);
+    
+
     for (i=0; i < motor_count; i++) {
         mtr = state.motors[i];
-        mtr->power = largest_power * (int) round(new_powers[i] / np_largest);
+        mtr->power = (int) round(largest_power * (new_powers[i] / np_largest));
         mtr->disp_delta = 0;
     }
     
