@@ -50,7 +50,7 @@ process check_motors = {
     .id         = 0,
     .last_run   = 0,
     .interval   = 500,
-    .enabled    = false,
+    .enabled    = true,
     .callback   = &check_motors_f,
     .label      = check_motors_l
 };
@@ -126,85 +126,111 @@ void check_motors_f(pid_t pid)
 {
     /* Gradient Descent Motor Error correction */
 
-    const double learning_rate = 0.05;
-    
+    const double learn_rate = 0.05;
+
     motor* mtr;
     int i;
-    double c_norm = 0.0,
-           r_norm = 0.0,
-           d_norm = 0.0,
-           d_r_norm = 0.0,
-           largest_power = 0.0;
+    int largest_power = 0;
 
-    int allzero = 0;
-    
+    float d_norm = 0.0; // Norm of desired power
+    float c_norm = 0.0; // Norm of applied power
+    float r_norm = 0.0; // Norm of perceived speed
+
+    /* Calculate norms of our three vectors */
     for (i=0; i < motor_count; i++) {
         mtr = state.motors[i];
-
-        allzero = allzero || mtr->desired_power;
         
-        /* Calculate norms for our three vectors */
-        c_norm += pow((double) mtr->power, 2.0);
-        r_norm += pow((double) mtr->disp_delta, 2.0);
-        d_norm += pow((double) mtr->desired_power, 2.0);
+        d_norm += sq((float) mtr->desired_power);
+        c_norm += sq((float) mtr->power);
+        r_norm += sq((float) mtr->speed);
 
-        if (abs(largest_power) < abs(mtr->desired_power))
-            largest_power = (double) mtr->desired_power;
+        if (largest_power < abs(mtr->desired_power))
+            largest_power = abs(mtr->desired_power);
     }
 
-    if (allzero == 0)
+    if (d_norm == 0)
         return;
 
+    d_norm = sqrt(d_norm);
     c_norm = sqrt(c_norm);
     r_norm = sqrt(r_norm);
-    d_norm = sqrt(d_norm);
 
-    double c_unit[motor_count],
-           r_unit[motor_count],
-           d_unit[motor_count];
+    float d_unit[motor_count],
+          c_unit[motor_count],
+          r_unit[motor_count];
 
-    double err_rd[motor_count];
+    float err_dr[motor_count];
+    float r_d_norm = 0.0; // Norm of r - d
 
+    /* Generate unit vectors and begin building error vector */
     for (i=0; i < motor_count; i++) {
         mtr = state.motors[i];
 
         /* Calculate unit vectors */
-        c_norm == 0.0 ? c_unit[i] = 0.0 : c_unit[i] = ((double) mtr->power)         / c_norm;
-        r_norm == 0.0 ? r_unit[i] = 0.0 : r_unit[i] = ((double) mtr->disp_delta)    / r_norm;
-        d_norm == 0.0 ? d_unit[i] = 0.0 : d_unit[i] = ((double) mtr->desired_power) / d_norm;
+        d_unit[i] = ((float) mtr->desired_power) / d_norm;
+        c_unit[i] = ((float) mtr->power)         / c_norm;
+        r_unit[i] = ((float) mtr->speed)         / r_norm;
 
         /* r_i - d_i */
-        err_rd[i] = d_unit[i] - r_unit[i];
+        err_dr[i] = d_unit[i] - r_unit[i];
+
+        /* If we're getting NaNs we can't do anything */
+        if (isnan(err_dr[i])) return;
 
         /* Norm of d-r */
-        d_r_norm += pow((d_unit[i] - r_unit[i]), 2.0);
-    }
+        r_d_norm += sq(r_unit[i] - d_unit[i]);
 
-    d_r_norm = sqrt(d_r_norm);
-    double new_powers[motor_count];
-    double np_largest = 0.0;
-
-    for (i=0; i < motor_count; i++) {
-        mtr = state.motors[i];
-
-        /* 
-           re-use the err variable to get the derivative of 
-           the error function w.r.t the ith dimension.
+        /*
+        Serial.print(d_unit[i]);
+        Serial.print(" ");
+        Serial.print(c_unit[i]);
+        Serial.print(" ");
+        Serial.print(r_unit[i]);
+        Serial.print(" | ");
+        Serial.print(err_dr[i]);
+        Serial.println(" ");
         */
-        err_rd[i] /= d_r_norm;
-        
-        new_powers[i] = c_unit[i] - (learning_rate * err_rd[i]);
-        np_largest = np_largest < fabs(new_powers[i]) ? fabs(new_powers[i]) : np_largest;
     }
-
     
+    r_d_norm = sqrt(r_d_norm);
+
+    // Serial.println(r_d_norm);
+
+    float new_powers[motor_count];
+    float largest_new = 0.0;
+
     for (i=0; i < motor_count; i++) {
         mtr = state.motors[i];
-        mtr->power = (int) round(largest_power * (new_powers[i] / np_largest));
-        mtr->disp_delta = 0;
+
+        if(r_d_norm != 0)
+            err_dr[i] /= r_d_norm;
+
+        /*
+        Serial.print(err_dr[i]);
+        Serial.print(" ");
+        */
+
+        new_powers[i] = c_unit[i] + (learn_rate * err_dr[i]);
+        
+        if (largest_new < fabs(new_powers[i]))
+            largest_new = fabs(new_powers[i]);
     }
-    
+
+    // Serial.println("\n--");
+
+    for (i=0; i < motor_count; i++) {
+        mtr = state.motors[i];
+        mtr->power = round((float) largest_power * new_powers[i]);
+
+        Serial.print(mtr->power);
+        Serial.print(" ");
+        Serial.println(new_powers[i]);
+    }
+
+    Serial.println("--");
+
     write_powers();
+
 }
 
 
