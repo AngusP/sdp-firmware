@@ -33,12 +33,14 @@ void SDPsetup() {
 void write_powers()
 {
     for(int i=0; i < motor_count; i++){
+        /*
         #ifdef FW_DEBUG
         Serial.print(i);
         Serial.print(F(": "));
         Serial.print(state.motors[i]->power);
         Serial.print(F(" "));
         #endif
+        */
         if(state.motors[i]->power < 0){
             motorBackward(state.motors[i]->port, abs(state.motors[i]->power));
         } else if (state.motors[i]->power == 0) {
@@ -48,9 +50,11 @@ void write_powers()
         }
         state.motors[i]->last_write = millis();
     }
+    /*
     #ifdef FW_DEBUG
     Serial.println();
     #endif
+    */
 }
 
 void write_powers(int overwrite)

@@ -49,7 +49,7 @@ void check_motors_f(pid_t);
 process check_motors = {
     .id         = 0,
     .last_run   = 0,
-    .interval   = 500,
+    .interval   = 200,
     .enabled    = true,
     .callback   = &check_motors_f,
     .label      = check_motors_l
@@ -193,7 +193,7 @@ void check_motors_f(pid_t pid)
     }
     
     r_d_norm = sqrt(r_d_norm);
-
+    
     // Serial.println(r_d_norm);
 
     float new_powers[motor_count];
@@ -222,12 +222,14 @@ void check_motors_f(pid_t pid)
         mtr = state.motors[i];
         mtr->power = round((float) largest_power * new_powers[i]);
 
+        /*
         Serial.print(mtr->power);
         Serial.print(" ");
         Serial.println(new_powers[i]);
+        */
     }
 
-    Serial.println("--");
+    // Serial.println("--");
 
     write_powers();
 
