@@ -50,7 +50,7 @@ process check_motors = {
     .id         = 0,
     .last_run   = 0,
     .interval   = 500,
-    .enabled    = true,
+    .enabled    = false,
     .callback   = &check_motors_f,
     .label      = check_motors_l
 };
@@ -169,12 +169,12 @@ void check_motors_f(pid_t pid)
         mtr = state.motors[i];
 
         /* Calculate unit vectors */
-        c_unit[i] = ((double) mtr->power)         / c_norm;
-        r_unit[i] = ((double) mtr->disp_delta)    / r_norm;
-        d_unit[i] = ((double) mtr->desired_power) / d_norm;
+        c_norm == 0.0 ? c_unit[i] = 0.0 : c_unit[i] = ((double) mtr->power)         / c_norm;
+        r_norm == 0.0 ? r_unit[i] = 0.0 : r_unit[i] = ((double) mtr->disp_delta)    / r_norm;
+        d_norm == 0.0 ? d_unit[i] = 0.0 : d_unit[i] = ((double) mtr->desired_power) / d_norm;
 
         /* r_i - d_i */
-        err_rd[i] = r_unit[i] - d_unit[i];
+        err_rd[i] = d_unit[i] - r_unit[i];
 
         /* Norm of d-r */
         d_r_norm += pow((d_unit[i] - r_unit[i]), 2.0);
@@ -197,29 +197,7 @@ void check_motors_f(pid_t pid)
         np_largest = np_largest < fabs(new_powers[i]) ? fabs(new_powers[i]) : np_largest;
     }
 
-    Serial.println(F("Error:"));
-    Serial.print(F("r: "));
-    for (i=0; i < motor_count; i++) {
-        Serial.print(r_unit[i]);
-        Serial.print(" ");
-    }
-    Serial.println();
-    Serial.print(F("err: "));
-    for (i=0; i < motor_count; i++) {
-        Serial.print(err_rd[i]);
-        Serial.print(" ");
-    }
-    Serial.println();
-    Serial.print(F("new: "));
-    for (i=0; i < motor_count; i++) {
-        Serial.print(new_powers[i]);
-        Serial.print(" ");
-    }
-    Serial.println();
-    Serial.print(F("Largest: "));
-    Serial.println(np_largest);
     
-
     for (i=0; i < motor_count; i++) {
         mtr = state.motors[i];
         mtr->power = (int) round(largest_power * (new_powers[i] / np_largest));
