@@ -44,6 +44,8 @@ public:
     float stall_constant;
     unsigned int stall_count;
 
+    // For holonomics
+    static const float velo_coupling_mat[3][3];
 };
 
 extern State state;

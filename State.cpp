@@ -36,6 +36,13 @@ static motor motor_2 = {
     .last_write     = 0
 };
 
+const float State::velo_coupling_mat[3][3] =
+{
+    {-0.5,   0.8660254,   1.0},
+    {-0.5,  -0.8660254,   1.0},
+    {1.0,    0.0,         1.0}
+};
+
 void State::setup()
 {
     motors[0] = &motor_0;

@@ -117,8 +117,50 @@ void CommandSet::stop()
 }
 
 void CommandSet::go()
-{    
-// TODO, holonomics and shit
+{
+    /* holonomics and shit */
+    float x_vel = atof(sCmd.next());
+    float y_vel = atof(sCmd.next());
+    float r_vel = atof(sCmd.next());
+
+    Serial.println(F("A"));
+    #ifdef FW_DEBUG
+    Serial.println(F("Going"));
+    #endif
+
+    float new_powers[motor_count];
+
+    new_powers[0] =
+        state.velo_coupling_mat[0][0] * x_vel +
+        state.velo_coupling_mat[0][1] * y_vel +
+        state.velo_coupling_mat[0][2] * r_vel;
+
+    new_powers[1] =
+        state.velo_coupling_mat[1][0] * x_vel +
+        state.velo_coupling_mat[1][1] * y_vel +
+        state.velo_coupling_mat[1][2] * r_vel;
+
+    new_powers[2] =
+        state.velo_coupling_mat[2][0] * x_vel +
+        state.velo_coupling_mat[2][1] * y_vel +
+        state.velo_coupling_mat[2][2] * r_vel;
+
+    float largest = 0.0;
+    for (int i=0; i<3; i++){
+        if (largest < fabs(new_powers[i]))
+            largest = fabs(new_powers[i]);
+    }
+    
+    for (int i=0; i<3; i++){
+        new_powers[i] = round(new_powers[i] * (1.0/largest) * 255.0);
+    }
+
+    for(int i=0; i < motor_count; i++){
+        state.motors[i]->power = state.motors[i]->desired_power = (int) new_powers[i];
+        state.motors[i]->disp_delta = 0;
+    }
+    write_powers();
+    
 }
 
 /***  READ ROTARY ENCODERS  **************************************************************************/
