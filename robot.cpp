@@ -248,7 +248,7 @@ void exec_rotation_f(pid_t pid)
 
     if (current_delta >= state.rotation_delta) {
         #ifdef FW_DEBUG
-        Serial.println("Ending rotation");
+        Serial.println(F("Ending rotation"));
         #endif
         motorAllStop();
         processes.disable(pid);
