@@ -50,6 +50,14 @@ All commands should be sent with a trailing newline, \verb|\n|
   
   gets: nothing
 
+\item[Go] 
+  Give the robot a $(x,y,\omega)$ vector, which it'll use to calculate and execute the holonomic motion in that direction. $x$ is the lateral (right +ve) direction, $y$ is the forward and $\omega$ is the rotational speed (anti-clockwise +ve). Note that the bot will always execute the motion at the maximum speed possible, so the \verb|rotate| command should be used for precise rotations. The bounds on the variables are undefined, as their relative magnitudes are used though the recommended range is $-1.0$ to $1.0$. \verb|M 0 0 0| will stop the robot.
+
+  send: \verb|G %f1 %f2 %f3|
+  
+  gets: \verb|A|
+
+  debug: \verb|Going|
   
 \item[Move] 
   Tells the robot to apply power to the motors in the order 1 $>$ 2 $>$ 3. Valid range is -255 to 255 inclusive. \verb|M 0 0 0| will stop the robot.
@@ -58,7 +66,7 @@ All commands should be sent with a trailing newline, \verb|\n|
   
   gets: \verb|A|
 
-  debug: \verb|Moving\n 0: d1 1: d2 2: d3|
+  debug: \verb|Moving|
 
   
 \item[Force Stop]
