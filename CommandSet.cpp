@@ -59,7 +59,8 @@ void CommandSet::readSerial()
 void CommandSet::unrecognized(const char* command)
 {
     /* NACK */
-    Serial.println(F("N"));
+    Serial.print(F("N - "));
+    Serial.println(command);
 }
 
 /***  SETUP CALLBACKS FOR SERIAL COMMANDS  ***********************************************************/
