@@ -24,7 +24,6 @@ class CommandSet
         static void grab();
         static void kick();
         static void rotate();
-        static void updateStall();
 
         static void proc_dump();
         static void proc_toggle();

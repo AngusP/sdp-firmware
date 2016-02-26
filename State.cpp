@@ -53,10 +53,5 @@ void State::setup()
     status_led = LOW;
     pinMode(status_led_pin, OUTPUT);
     digitalWrite(status_led_pin, status_led);
-
-    /* Magic numbers! But they're runtime updatable */
-    stall_gradient = 1.0;
-    stall_constant = 20.0;
-    stall_count = 0;
 }
 

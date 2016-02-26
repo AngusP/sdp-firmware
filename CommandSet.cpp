@@ -13,32 +13,30 @@ static SerialCommand sCmd; // The SerialCommand object
 void CommandSet::setup()
 {
     /* Setup callbacks for SerialCommand commands */
-    sCmd.addCommand("L", this->led);              // Toggles LED
-    sCmd.addCommand("ping", this->ping);          // Check serial link
-    sCmd.addCommand("help", this->help);
+    sCmd.addCommand("L",       this->led);          // Toggles LED
+    sCmd.addCommand("ping",    this->ping);         // Check serial link
+    sCmd.addCommand("help",    this->help);
 
     /* Movement commands */
-    sCmd.addCommand("M", this->move);             // Runs wheel motors
-    sCmd.addCommand("S", this->stop);             // Force stops all motors
-    sCmd.addCommand("G", this->go);               // Runs wheel motors with correction
+    sCmd.addCommand("M",       this->move);         // Runs wheel motors
+    sCmd.addCommand("S",       this->stop);         // Force stops all motors
+    sCmd.addCommand("G",       this->go);           // Runs wheel motors with correction
 
     /* Read from rotary encoders */
-    sCmd.addCommand("speeds", this->speeds);
+    sCmd.addCommand("speeds",  this->speeds);
 
     /* Misc commands */
-    sCmd.addCommand("pixels", this->pixels);      // Set LED colour
+    sCmd.addCommand("pixels",  this->pixels);       // Set LED colour
 
-    sCmd.addCommand("grab", this->grab);          // Grab 0 or 1
-    sCmd.addCommand("kick", this->kick);          // Kick
+    sCmd.addCommand("grab",    this->grab);         // Grab 0 or 1
+    sCmd.addCommand("kick",    this->kick);         // Kick
 
-    sCmd.addCommand("rotate", this->rotate);      // Rotate
-
-    sCmd.addCommand("stall", this->updateStall);
+    sCmd.addCommand("rotate",  this->rotate);       // Rotate
 
     /* Debug and inspection commands */
 
-    sCmd.addCommand("ps", this->proc_dump);
-    sCmd.addCommand("ptog", this->proc_toggle);
+    sCmd.addCommand("ps",      this->proc_dump);    // Show process status
+    sCmd.addCommand("ptog",    this->proc_toggle);  // Enable or disable by pid on the fly
     
     sCmd.setDefaultHandler(this->unrecognized);   // Handler for command that isn't matched
 
@@ -124,6 +122,9 @@ void CommandSet::go()
     float y_vel = atof(sCmd.next());
     float r_vel = atof(sCmd.next());
 
+    int power   = atoi(sCmd.next());
+    power = power > 0 && power <= 255 ? power : 255;
+
     Serial.println(F("A"));
     #ifdef FW_DEBUG
     Serial.println(F("Going"));
@@ -153,7 +154,7 @@ void CommandSet::go()
     }
     
     for (int i=0; i<3; i++){
-        new_powers[i] = round(new_powers[i] * (1.0/largest) * 255.0);
+        new_powers[i] = round(new_powers[i] * (1.0/largest) * (float) power);
     }
 
     for(int i=0; i < motor_count; i++){
@@ -257,7 +258,7 @@ void CommandSet::rotate()
 
     Serial.println(F("A"));
     #ifdef FW_DEBUG
-    Serial.print(F("rotting at "));
+    Serial.print(F("rotating at "));
     Serial.print(motor_power);
     Serial.print(F(" to "));
     Serial.print(delta);
@@ -297,19 +298,5 @@ void CommandSet::proc_toggle()
 
     Serial.print(F("toggled pid "));
     Serial.println(pid);
-}
-
-void CommandSet::updateStall()
-{
-    float new_grad = (float) atof(sCmd.next());
-    float new_cons = (float) atof(sCmd.next());
-
-    Serial.print(F("New stall params are "));
-    Serial.print(new_grad);
-    Serial.print(F(" & "));
-    Serial.println(new_cons);
-
-    state.stall_gradient = new_grad;
-    state.stall_constant = new_cons;
 }
 

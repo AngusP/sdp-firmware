@@ -40,10 +40,6 @@ public:
     long rotation_delta;
     process* rotation_process;
     
-    float stall_gradient;
-    float stall_constant;
-    unsigned int stall_count;
-
     // For holonomics
     static const float velo_coupling_mat[3][3];
 };
