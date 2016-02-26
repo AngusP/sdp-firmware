@@ -61,8 +61,11 @@ void SerialCommand::dumpCommandSet() {
     Serial.println("Dumping command set...");
     #endif
 
-    for (byte i=0; i<commandCount; i++)
+    for (byte i=0; i<commandCount; i++){
         Serial.println(commandList[i].command);
+        Serial.flush();
+        delay(20);
+    }
 
     #ifdef SERIALCOMMAND_DEBUG
     Serial.println("done.");

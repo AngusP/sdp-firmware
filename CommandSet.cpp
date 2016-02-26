@@ -77,6 +77,7 @@ void CommandSet::ping()
 void CommandSet::help()
 {
     Serial.println(F("Valid input commands: (some have arguments)"));
+    delay(10);
     sCmd.dumpCommandSet();
 }
 
