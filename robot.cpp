@@ -70,6 +70,20 @@ process exec_rotation = {
 };
 
 
+/*
+  Handle Kicking and grabbing asynchronously
+*/
+const char kg_handler_l[] = "kick & grab handler";
+void kg_handler_f(pid_t);
+process kg_handler = {
+    .id         = 0,
+    .last_run   = 0,
+    .interval   = 1000,
+    .enabled    = false,
+    .callback   = &kg_handler_f,
+    .label      = kg_handler_l
+};
+
 
 /*** 
      PROCESS FUNCTIONS
@@ -80,6 +94,7 @@ void heartbeat_f(pid_t pid)
     // Toggles the LED
     command_set.led();
 }
+
 
 void update_motors_f(pid_t pid)
 {
@@ -92,6 +107,8 @@ void update_motors_f(pid_t pid)
         
         byte delta = (byte) Wire.read();
         if (state.motors[i]->power < 0) {
+            /* The encoder boards report overflowed 8bit 
+               ints if the encoders are going backwards -_- */
             if (delta) {
                 delta = 0xFF - delta;
             }
@@ -248,10 +265,43 @@ void exec_rotation_f(pid_t pid)
 
     if (current_delta >= state.rotation_delta) {
         #ifdef FW_DEBUG
-        Serial.println(F("Ending rotation"));
+        Serial.println(F("done"));
         #endif
         motorAllStop();
         processes.disable(pid);
+    }
+}
+
+
+void kg_handler_f(pid_t pid)
+{
+    const int grab_port = 1;
+
+    switch(state.kg_handler_action) {
+    case 0:
+        /* kicking */
+        digitalWrite(6, LOW);
+    
+    case 1:
+        /* grab open part 1*/
+        motorBackward(grab_port, 255);
+        processes.change(pid, 700L);
+        state.kg_handler_action = 2;
+        break;
+    
+    case 2:
+        /* grab open part 2 */
+        motorStop(grab_port);
+    
+    case 3:
+        /* grab close */
+        motorStop(grab_port);
+        
+    default:
+        Serial.println(F("done"));
+        state.kg_handler_action = -1;
+        processes.disable(pid);
+        break;
     }
 }
 
@@ -265,8 +315,10 @@ void Robot::register_processes()
     processes.add(&check_motors);
     processes.add(&heartbeat);
     processes.add(&exec_rotation);
+    processes.add(&kg_handler);
 
-    state.rotation_process = &exec_rotation;
+    state.rotation_process  = &exec_rotation;
+    state.kick_grab_handler = &kg_handler;
 }
 
 

@@ -45,6 +45,8 @@ public:
     int change(size_t pid, void (*callback)(pid_t), unsigned long interval);
     int change(size_t pid, void (*callback)(pid_t));
     int change(size_t pid, unsigned long interval);
+
+    int forward(pid_t pid);
     
 protected:
     process** tasks;

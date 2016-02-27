@@ -44,7 +44,7 @@ void Processes::panic(int error)
     switch (error) {
 
     case PROCESS_ERR_OOM:
-        Serial.println(F("!! PANIC: Out of memory!"));
+        Serial.println(F("!! PANIC: OOM!"));
         break;
 
     default:
@@ -209,6 +209,18 @@ int Processes::change(pid_t pid, unsigned long interval)
 {
     if (pid >= num_tasks) return -1;
     tasks[pid]->interval = interval;
+    return 0;
+}
+
+/*
+ *  Set a process' last run to the current time. 
+ *  Useful for state-machine like behaviour
+ *  @return: -1 if failure, 0 if success
+ */
+
+int Processes::forward(pid_t pid) {
+    if (pid >= num_tasks) return -1;
+    tasks[pid]->last_run = millis();
     return 0;
 }
 

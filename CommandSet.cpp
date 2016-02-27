@@ -217,23 +217,20 @@ void CommandSet::grab()
     Serial.println(direction);
     #endif
 
+    process* handler = state.kick_grab_handler;
+    processes.enable(handler->id);
+
     if(direction){
         /* close */
+        state.kg_handler_action = 3;
         motorBackward(port,  motor_power);
-        delay(1500);
+        processes.change(handler->id, 1500L);
     } else {
         /* open */
+        state.kg_handler_action = 1;
         motorForward(port, motor_power);
-        delay(1500);
-        motorBackward(port, motor_power);
-        delay(700);
+        processes.change(handler->id, 1500L);
     }
-
-    motorStop(port);
-
-    #ifdef FW_DEBUG
-    Serial.println(F("done"));
-    #endif
 }
 
 
@@ -245,10 +242,15 @@ void CommandSet::kick()
     #endif
 
     digitalWrite(6, HIGH);
-    delay(550);
-    digitalWrite(6, LOW);
+    
+    process* handler = state.kick_grab_handler;
+    state.kg_handler_action = 0;
 
-    Serial.println(F("done"));
+    /* Activate handler and set interval */
+    processes.enable(handler->id);
+    processes.change(handler->id, 550L);
+    processes.forward(handler->id);
+    
 }
 
 

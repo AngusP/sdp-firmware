@@ -30,7 +30,8 @@ public:
     void setup();
     
     int battery;
-    uint8_t status_led, status_led_pin;
+    uint8_t status_led;
+    const uint8_t status_led_pin = 13;
     float heading;
     
     motor* motors[motor_count];
@@ -39,6 +40,10 @@ public:
     long initial_displacement[motor_count];
     long rotation_delta;
     process* rotation_process;
+
+    // Allows kicking and grabbing to execute without blocking
+    process* kick_grab_handler;
+    int kg_handler_action;
     
     // For holonomics
     static const float velo_coupling_mat[3][3];
