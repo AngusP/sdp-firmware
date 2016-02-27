@@ -26,7 +26,7 @@ with the Arduino IDE.
 
 Ensure the Arduino you wish to program is plugged in, it’s power light
 is on (if it has one) and the IDE can detect it – if it can, it’ll be
-available under Tools  \>  Serial Port  \>  /dev/ttyACM[n]. Make sure
+available under Tools $>$ Serial Port $>$ /dev/ttyACM\[n\]. Make sure
 that the correct board is selected – ‘Arduino/Genuino Uno’ works for
 both the Uno and Xino. To upload, hit the upload button (the arrow in
 the blue toolbar) which will proceed to flash the board. See
@@ -65,6 +65,7 @@ is communicating at the correct Baud rate, and is set to send a
 
 The command set that the robot currently recognises is documented in the
 Technical Specification.
+
 
 
 Firmware Technical Spec
@@ -155,83 +156,118 @@ Command Set
 
 All commands should be sent with a trailing newline, `\n`
 
-Ping  
-This is the simplest command the firmware responds to and should
-immediately receive a `pong` back.
+Ping
 
-send: `ping`
+:   This is the simplest command the firmware responds to and should
+    immediately receive a `pong` back.
 
-gets: `pong`
+    send: `ping`
 
-Toggle LED  
-Toggles the LED on/off. This will get overridden pretty quickly by the
-heartbeat blinking, but you can verify your connection this way too.
+    gets: `pong`
 
-send: `L\n`
+Toggle LED
 
-gets: nothing
+:   Toggles the LED on/off. This will get overridden pretty quickly by
+    the heartbeat blinking, but you can verify your connection this
+    way too.
 
-Move  
-Tells the robot to apply power to the motors in the order 1  \>  2  \> 
-3. Valid range is -255 to 255 inclusive. `M 0 0 0` will stop the robot.
+    send: `L\n`
 
-send: `M %d1 %d2 %d3`
+    gets: nothing
 
-gets: `A`
+Go
 
-debug: `Moving\n 0: d1 1: d2 2: d3`
+:   Give the robot a $(x,y,\omega)$ vector, which it’ll use to calculate
+    and execute the holonomic motion in that direction. $x$ is the
+    lateral (right +ve) direction, $y$ is the forward and $\omega$ is
+    the rotational speed (anti-clockwise +ve). Note that the bot will
+    always execute the motion at the maximum speed possible, so the
+    `rotate` command should be used for precise rotations. The bounds on
+    the variables are undefined, as their relative magnitudes are used
+    though the recommended range is $-1.0$ to $1.0$. `M 0 0 0` will stop
+    the robot.
 
-Force Stop  
-Force a stop. The robot will remove power from the motors immediately,
-without trying to do any clever \`quick stop\` by braking the motors.
+    send: `G %f1 %f2 %f3`
 
-send: `S`
+    gets: `A`
 
-gets: `A`
+    debug: `Going`
 
-debug: `Force stopping`
+Move
 
-Motor Speeds  
-Will print the instantaneous speeds of all three drive motors in
-bogounits (encoder stops per second) in the form:
+:   Tells the robot to apply power to the motors in the order 1 $>$ 2
+    $>$ 3. Valid range is -255 to 255 inclusive. `M 0 0 0` will stop
+    the robot.
 
-send: `speeds`
+    send: `M %d1 %d2 %d3`
 
-gets: `0: n.nn 1: n.nn 2: n.nn`
+    gets: `A`
 
-Grabbing  
-Opens or closes the grabber, depending on the argument given
+    debug: `Moving`
 
-send: `grab <0/1>`
+Force Stop
 
-gets: `A`
+:   Force a stop. The robot will remove power from the motors
+    immediately, without trying to do any clever \`quick stop\` by
+    braking the motors.
 
-debug: `grabbing <0/1>\n done`
+    send: `S`
 
-Rotating  
-Rotates at `d1` power (-255 to 255 inclusive) until the encoders have
-gone through `d2` stops (0+) on average. This can be used to get fairly
-precice rotation but will need calibration and depends on battery life &
-power.
+    gets: `A`
 
-send: `rotate %d1 %d2`
+    debug: `Force stopping`
 
-gets: `A`
+Motor Speeds
 
-debug: `rotating at %d1 to %d2 stops`
+:   Will print the instantaneous speeds of all three drive motors in
+    bogounits (encoder stops per second) in the form:
 
-Help  
-Prints the commands that the robot is listening for; this is always
-correct as it is generated on-the-fly from the Command Set parsing
-class. It won’t print how many arguments it expects, but is useful for
-checking spelling or troubleshooting a `N` (NACK).
+    send: `speeds`
 
-The help command can also be used to verify that the command set is the
-one you’re expecting.
+    gets: `0: n.nn 1: n.nn 2: n.nn`
 
-send: `help`
+Grabbing
 
-get: `Valid input commands: (some have arguments)`  
-`L\n ping\n help\n M\n S\n speeds\n kick\n grab\n rotate`
+:   Opens or closes the grabber, depending on the argument given
+
+    send: `grab <0/1>`
+
+    gets: `A`
+
+    debug: `grabbing <0/1>\n done`
+
+Rotating
+
+:   Rotates at `d1` power (-255 to 255 inclusive) until the encoders
+    have gone through `d2` stops (0+) on average. This can be used to
+    get fairly precice rotation but will need calibration and depends on
+    battery life & power.
+
+    send: `rotate %d1 %d2`
+
+    gets: `A`
+
+    debug: `rotating at %d1 to %d2 stops`
+
+Help
+
+:   Prints the commands that the robot is listening for; this is always
+    correct as it is generated on-the-fly from the Command Set
+    parsing class. It won’t print how many arguments it expects, but is
+    useful for checking spelling or troubleshooting a `N` (NACK).
+
+    The help command can also be used to verify that the command set is
+    the one you’re expecting.
+
+    send: `help`
+
+    get: `Valid input commands: (some have arguments)`\
+    `L\n ping\n help\n M\n S\n speeds\n kick\n grab\n rotate`
+
+NACK
+
+:   If the command is not recognised the bot will reply with a NACK:
+
+    `N - <unrecognised_command>`
 
 
