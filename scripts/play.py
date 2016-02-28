@@ -40,7 +40,6 @@ def main():
                 vector[1] = 1
             else:
                 vector[1] = 0
-            continue
 
         elif key == ord('s'):
             # Backward
@@ -49,25 +48,22 @@ def main():
                 vector[1] = -1
             else:
                 vector[1] = 0
-            continue
 
         elif key == ord('a'):
             # Left
             stdscr.addstr(1,0,"left")
             if vector[0] == 0:
-                vector[0] = 1
+                vector[0] = -1
             else:
                 vector[0] = 0
-            continue
 
         elif key == ord('d'):
             # Right
             stdscr.addstr(1,0,"right")
             if vector[0] == 0:
-                vector[0] = -1
+                vector[0] = 1
             else:
                 vector[0] = 0
-            continue
 
         elif key == ord('q'):
             # Right
@@ -76,7 +72,6 @@ def main():
                 vector[2] = 1
             else:
                 vector[2] = 0
-            continue
 
         elif key == ord('e'):
             # Right
@@ -85,7 +80,6 @@ def main():
                 vector[2] = -1
             else:
                 vector[2] = 0
-            continue
 
         elif key == ord('x'):
             curses.nocbreak()

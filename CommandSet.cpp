@@ -211,6 +211,11 @@ void CommandSet::grab()
     const int port          = 1;
     const int motor_power   = 255;
 
+    if (state.kg_handler_action != -1) {
+        Serial.println(F("N - grab"));
+        return;
+    }
+
     Serial.println(F("A"));
     #ifdef FW_DEBUG
     Serial.print(F("grabbing "));
@@ -231,11 +236,19 @@ void CommandSet::grab()
         motorForward(port, motor_power);
         processes.change(handler->id, 1500L);
     }
+
+    processes.enable(handler->id);
+    processes.forward(handler->id);
 }
 
 
 void CommandSet::kick()
 {
+    if (state.kg_handler_action != -1) {
+        Serial.println(F("N - kick"));
+        return;
+    }
+
     Serial.println(F("A"));
     #ifdef FW_DEBUG
     Serial.println(F("kicking"));

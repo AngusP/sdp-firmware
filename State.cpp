@@ -49,6 +49,7 @@ void State::setup()
     motors[1] = &motor_1;
     motors[2] = &motor_2;
 
+    kg_handler_action = -1;
     status_led = LOW;
     pinMode(status_led_pin, OUTPUT);
     digitalWrite(status_led_pin, status_led);
