@@ -67,7 +67,6 @@ The command set that the robot currently recognises is documented in the
 Technical Specification.
 
 
-
 Firmware Technical Spec
 =======================
 
@@ -177,17 +176,19 @@ Toggle LED
 
 Go
 
-:   Give the robot a $(x,y,\omega)$ vector, which it’ll use to calculate
-    and execute the holonomic motion in that direction. $x$ is the
-    lateral (right +ve) direction, $y$ is the forward and $\omega$ is
-    the rotational speed (anti-clockwise +ve). Note that the bot will
-    always execute the motion at the maximum speed possible, so the
-    `rotate` command should be used for precise rotations. The bounds on
-    the variables are undefined, as their relative magnitudes are used
-    though the recommended range is $-1.0$ to $1.0$. `M 0 0 0` will stop
-    the robot.
+:   Give the robot a $(x,y,\omega)$ vector and a power in the range 0 -
+    255, which it’ll use to calculate and execute the holonomic motion
+    in that direction. $x$ is the lateral (right +ve) direction, $y$ is
+    the forward and $\omega$ is the rotational speed
+    (anti-clockwise +ve). Note that the bot will always execute the
+    motion at the maximum speed possible, so the `rotate` command should
+    be used for precise rotations. The bounds on the variables are
+    undefined, as their relative magnitudes are used though the
+    recommended range is $-1.0$ to $1.0$. `G 0 0 0 0` or `G` will stop
+    the robot. If the fourth argument is omitted then it will default to
+    255 (full power).
 
-    send: `G %f1 %f2 %f3`
+    send: `G %f1 %f2 %f3 %d4`
 
     gets: `A`
 
@@ -196,8 +197,9 @@ Go
 Move
 
 :   Tells the robot to apply power to the motors in the order 1 $>$ 2
-    $>$ 3. Valid range is -255 to 255 inclusive. `M 0 0 0` will stop
-    the robot.
+    $>$ 3. Valid range is -255 to 255 inclusive. `M 0 0 0` or `M` will
+    stop the robot. This provides lower level / more direct control of
+    the motors, and in general ‘Go’ is preferable.
 
     send: `M %d1 %d2 %d3`
 
@@ -209,7 +211,8 @@ Force Stop
 
 :   Force a stop. The robot will remove power from the motors
     immediately, without trying to do any clever \`quick stop\` by
-    braking the motors.
+    braking the motors. Generally a singular `M` or `G` will
+    work better.
 
     send: `S`
 
@@ -240,8 +243,8 @@ Rotating
 
 :   Rotates at `d1` power (-255 to 255 inclusive) until the encoders
     have gone through `d2` stops (0+) on average. This can be used to
-    get fairly precice rotation but will need calibration and depends on
-    battery life & power.
+    get fairly precice rotation but stops isn’t degrees (though
+    it’s related) and depends somewhat on battery voltage.
 
     send: `rotate %d1 %d2`
 
@@ -262,7 +265,8 @@ Help
     send: `help`
 
     get: `Valid input commands: (some have arguments)`\
-    `L\n ping\n help\n M\n S\n speeds\n kick\n grab\n rotate`
+    (Each command will be printed on a new line, excluding the number
+    of arguments)
 
 NACK
 

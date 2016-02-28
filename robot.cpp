@@ -85,9 +85,25 @@ process kg_handler = {
 };
 
 
+const char light_sense_l[] = "Read light sensor";
+void light_sense_f(pid_t);
+process light_sense = {
+    .id         = 0,
+    .last_run   = 0,
+    .interval   = 1000,
+    .enabled    = true,
+    .callback   = &light_sense_f,
+    .label      = light_sense_l
+};
+
 /*** 
      PROCESS FUNCTIONS
 ***/
+
+void light_sense_f(pid_t pid)
+{
+    
+}
 
 void heartbeat_f(pid_t pid)
 {
@@ -278,9 +294,6 @@ void kg_handler_f(pid_t pid)
     const int grab_port = 1;
 
     switch(state.kg_handler_action) {
-    case 0:
-        /* kicking */
-        digitalWrite(6, LOW);
     
     case 1:
         /* grab open part 1*/
@@ -296,7 +309,11 @@ void kg_handler_f(pid_t pid)
     case 3:
         /* grab close */
         motorStop(grab_port);
-        
+    
+    case 0:
+        /* kicking */
+        digitalWrite(6, LOW);
+    
     default:
         Serial.println(F("done"));
         state.kg_handler_action = -1;

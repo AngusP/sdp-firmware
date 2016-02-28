@@ -24,6 +24,7 @@ def main():
         raise Exception("Couldn't open port " + which_port)
 
     vector = [0,0,0]
+    grab_state = False
 
     while True:
         # WASD Control for translation, QE for rotate
@@ -80,6 +81,22 @@ def main():
                 vector[2] = -1
             else:
                 vector[2] = 0
+
+        elif key == ord(' '):
+            # Kicking
+            stdscr.addstr(1,0,"kick")
+            port.write("kick\n")
+
+        elif key == ord('\n'):
+            # Grabbing
+            stdscr.addstr(1,0,"grab")
+            if grab_state:
+                port.write("grab 0\n")
+            else:
+                port.write("grab 1\n")
+ 
+            grab_state = not grab_state
+            
 
         elif key == ord('x'):
             curses.nocbreak()

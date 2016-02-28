@@ -261,7 +261,7 @@ void CommandSet::kick()
 
     /* Activate handler and set interval */
     processes.enable(handler->id);
-    processes.change(handler->id, 550L);
+    processes.change(handler->id, 300L);
     processes.forward(handler->id);
     
 }
