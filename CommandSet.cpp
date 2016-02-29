@@ -3,11 +3,6 @@
 #include "robot.h"
 #define FW_DEBUG
 
-// TODO move this elsewhere
-// ALL THE LEDEEES!
-#define NUM_PIXELS 10
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, 5, NEO_GRB + NEO_KHZ800);
-
 static SerialCommand sCmd; // The SerialCommand object
 
 void CommandSet::setup()
@@ -39,10 +34,6 @@ void CommandSet::setup()
     sCmd.addCommand("ptog",    this->proc_toggle);  // Enable or disable by pid on the fly
     
     sCmd.setDefaultHandler(this->unrecognized);   // Handler for command that isn't matched
-
-    // TODO move this
-    strip.begin();
-    strip.show();
 }
 
 void CommandSet::readSerial()
@@ -196,10 +187,10 @@ void CommandSet::pixels()
     Serial.println(blue,HEX);
     #endif
 
-    for (uint16_t i = 0; i < NUM_PIXELS; i++) {
-        strip.setPixelColor(i, red, green, blue);
+    for (uint16_t i = 0; i < 10; i++) {
+        state.strip.setPixelColor(i, red, green, blue);
     }
-    strip.show();
+    state.strip.show();
 }
 
 

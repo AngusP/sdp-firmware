@@ -3,8 +3,12 @@
 
 #include <Arduino.h>
 #include "Processes.h"
+#include "Adafruit_NeoPixel.h"
 
 #define motor_count 3
+
+#define NUM_PIXELS 10
+#define PIXEL_PIN 5
 
 /*
    Generic motor structure, carries around all needed information.
@@ -26,8 +30,7 @@ typedef struct {
 
 class State {
 
-public:
-    void setup();
+public:void setup();
     
     int battery;
     uint8_t status_led;
@@ -44,6 +47,8 @@ public:
     // Allows kicking and grabbing to execute without blocking
     process* kick_grab_handler;
     int kg_handler_action;
+    
+    Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
     
     // For holonomics
     static const float velo_coupling_mat[3][3];

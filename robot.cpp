@@ -85,25 +85,34 @@ process kg_handler = {
 };
 
 
-const char light_sense_l[] = "Read light sensor";
-void light_sense_f(pid_t);
-process light_sense = {
+const char prox_sense_l[] = "Read proximity sensor";
+void prox_sense_f(pid_t);
+process prox_sense = {
     .id         = 0,
     .last_run   = 0,
     .interval   = 1000,
-    .enabled    = true,
-    .callback   = &light_sense_f,
-    .label      = light_sense_l
+    .enabled    = false,
+    .callback   = &prox_sense_f,
+    .label      = prox_sense_l
 };
+
+
+const char pixel_l[] = "LED pixels";
+void pixel_f(pid_t);
+process pixel = {
+    .id         = 0,
+    .last_run   = 0,
+    .interval   = 100,
+    .enabled    = false,
+    .callback   = &pixel_f,
+    .label      = pixel_l
+};
+
 
 /*** 
      PROCESS FUNCTIONS
 ***/
 
-void light_sense_f(pid_t pid)
-{
-    
-}
 
 void heartbeat_f(pid_t pid)
 {
@@ -322,6 +331,52 @@ void kg_handler_f(pid_t pid)
     }
 }
 
+
+void prox_sense_f(pid_t pid)
+{
+    
+}
+
+
+/**
+   Because pretty
+**/
+
+uint16_t pixel_persist_i, pixel_persist_j; // sorry
+uint32_t wheel(byte);
+
+void pixel_f(pid_t pid)
+{
+    pixel_persist_j == 256 ? pixel_persist_j = 0 : pixel_persist_j++;
+    
+    for(pixel_persist_i=0; pixel_persist_i<state.strip.numPixels(); pixel_persist_i+=5) {
+        state.strip.setPixelColor(pixel_persist_i,   wheel(((pixel_persist_i/5)+pixel_persist_j) & 255));
+        state.strip.setPixelColor(pixel_persist_i+1, wheel(((pixel_persist_i/5)+pixel_persist_j) & 255));
+        state.strip.setPixelColor(pixel_persist_i+2, wheel(((pixel_persist_i/5)+pixel_persist_j) & 255));
+        state.strip.setPixelColor(pixel_persist_i+3, wheel(((pixel_persist_i/5)+pixel_persist_j) & 255));
+        state.strip.setPixelColor(pixel_persist_i+4, wheel(((pixel_persist_i/5)+pixel_persist_j) & 255));
+    }
+    state.strip.show();
+}
+
+/*
+  Helper to do colour calculation for pixel
+*/
+uint32_t wheel(byte wheel_pos) {
+    if(wheel_pos < 85) {
+        return state.strip.Color(wheel_pos * 3, 255 - wheel_pos * 3, 0);
+    }
+    if(wheel_pos < 170) {
+        wheel_pos -= 85;
+        return state.strip.Color(255 - wheel_pos * 3, 0, wheel_pos * 3);
+    }
+    wheel_pos -= 170;
+    return state.strip.Color(0, wheel_pos * 3, 255 - wheel_pos * 3);
+}
+
+
+
+
 /*** 
      REGISTER WITH PROCESS OBJECT
 ***/
@@ -330,9 +385,13 @@ void Robot::register_processes()
 {
     processes.add(&update_motors);
     processes.add(&check_motors);
+    
     processes.add(&heartbeat);
+    
     processes.add(&exec_rotation);
     processes.add(&kg_handler);
+    
+    processes.add(&prox_sense);
 
     state.rotation_process  = &exec_rotation;
     state.kick_grab_handler = &kg_handler;

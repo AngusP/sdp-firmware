@@ -4,7 +4,6 @@
 #include "State.h"
 #include "SerialCommand.h"
 #include "SDPArduino.h"
-#include "Adafruit_NeoPixel.h"
 
 class CommandSet
 {

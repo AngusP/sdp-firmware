@@ -45,6 +45,9 @@ const float State::velo_coupling_mat[3][3] =
 
 void State::setup()
 {
+    strip.begin();
+    strip.show();
+    
     motors[0] = &motor_0;
     motors[1] = &motor_1;
     motors[2] = &motor_2;

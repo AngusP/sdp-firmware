@@ -101,6 +101,9 @@ void Processes::status()
     delay(10);
 }
 
+/**
+   Direct memory access is fun
+**/
 size_t Processes::memcheck()
 {
     size_t stackptr, heapptr;
@@ -163,7 +166,9 @@ process* Processes::get_by_callback(void (*callback)(pid_t))
     return num_hits == 1 ? found_process : NULL;
 }
 
-
+/**
+   Used to get more memory for storing processes
+ **/
 void Processes::grow_table(size_t num)
 {
     /*
@@ -183,9 +188,15 @@ void Processes::disable(pid_t pid)
     tasks[pid]->enabled = false;
 }
 
+/**
+   Enable a process and reset last_run in an attempt to make it fire immediately; 
+   This is not guaranteed if the robot has only just started running
+**/
+
 void Processes::enable(pid_t pid)
 {
     tasks[pid]->enabled = true;
+    tasks[pid]->last_run = 0;
 }
 
 /*
