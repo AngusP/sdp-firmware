@@ -118,6 +118,20 @@ void heartbeat_f(pid_t pid)
 {
     // Toggles the LED
     command_set.led();
+
+    if (!pixel.enabled){
+        // Also toggle a couple of pixels as the on board LED is well hidden
+        uint32_t col_left = state.strip.getPixelColor(4);
+        
+        if (col_left != 0) {
+            state.strip.setPixelColor(4, 0, 0, 0);
+            state.strip.setPixelColor(5, 0, 0, 0);
+        } else {
+            state.strip.setPixelColor(4, 50, 50, 50);
+            state.strip.setPixelColor(5, 50, 50, 50);
+        }
+        state.strip.show();
+    }
 }
 
 
@@ -387,6 +401,7 @@ void Robot::register_processes()
     processes.add(&check_motors);
     
     processes.add(&heartbeat);
+    processes.add(&pixel);
     
     processes.add(&exec_rotation);
     processes.add(&kg_handler);

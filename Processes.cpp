@@ -166,6 +166,16 @@ process* Processes::get_by_callback(void (*callback)(pid_t))
     return num_hits == 1 ? found_process : NULL;
 }
 
+
+boolean Processes::is_enabled(pid_t pid)
+{
+    if (pid >= num_tasks) {
+        return false;
+    } else {
+        return tasks[pid]->enabled;
+    }
+}
+
 /**
    Used to get more memory for storing processes
  **/

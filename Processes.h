@@ -36,6 +36,7 @@ public:
     
     process* get_by_id(pid_t pid);
     process* get_by_callback(void (*callback)(pid_t));
+    boolean is_enabled(pid_t pid);
 
     void enable(pid_t pid);
     void disable(pid_t pid);
