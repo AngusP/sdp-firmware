@@ -72,19 +72,24 @@ void Processes::status()
         
         Serial.print(tasks[i]->id);
         Serial.print(F("\t "));
+        delay(10);
 
         tasks[i]->enabled ? Serial.print(F("true ")) : Serial.print(F("false"));
         Serial.print(F("\t\t "));
+        delay(10);
         
         Serial.print(tasks[i]->interval);
         Serial.print(F("\t\t "));
+        delay(10);
         
         Serial.print(tasks[i]->last_run);
         Serial.print(F("\t\t "));
+        delay(10);
 
         /* Apparently this cast is fine 0_o */
         Serial.print((uint16_t) tasks[i]->callback, HEX);
         Serial.print(F("\t\t "));
+        delay(10);
 
         Serial.print(tasks[i]->label);
         Serial.println();
@@ -93,6 +98,8 @@ void Processes::status()
     }
 
     Serial.println(F("--- \t ------ \t -------- \t -------- \t -------- \t -----"));
+    delay(10);
+
     Serial.print(F("mem: "));
     Serial.print(memcheck());
     Serial.print(F(" free of "));
