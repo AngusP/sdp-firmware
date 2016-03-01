@@ -851,6 +851,13 @@ void Adafruit_NeoPixel::setPixelColor(uint16_t n, uint32_t c) {
   }
 }
 
+void Adafruit_NeoPixel::setAllPixelColors(
+ uint8_t r, uint8_t g, uint8_t b) {
+    for(int i=0; i<numLEDs; i++){
+        setPixelColor(i, r, g, b);
+    }
+}
+
 // Convert separate R,G,B into packed 32-bit RGB color.
 // Packed format is always RGB, regardless of LED strand color order.
 uint32_t Adafruit_NeoPixel::Color(uint8_t r, uint8_t g, uint8_t b) {
