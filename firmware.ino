@@ -40,26 +40,15 @@ void setup()
 
     bot.register_processes();
 
-    /* Blink green twice to visually confirm startup */
-
-    delay(120);
-    state.strip.setAllPixelColors(0, 255, 0);
-    state.strip.show();
-    delay(80);
-    state.strip.setAllPixelColors(0, 0, 0);
-    state.strip.show();
-    delay(120);
-    state.strip.setAllPixelColors(0, 255, 0);
-    state.strip.show();
-    delay(80);
-    state.strip.setAllPixelColors(0, 0, 0);
-    state.strip.show();
-    delay(120);
-    state.strip.setAllPixelColors(0, 255, 0);
-    state.strip.show();
-    delay(80);
-    state.strip.setAllPixelColors(0, 0, 0);
-    state.strip.show();
+    /* Blink green to visually confirm startup */
+    for (int i=0; i<5; i++){
+        delay(80);
+        state.strip.setAllPixelColors(0, 255, 0);
+        state.strip.show();
+        delay(60);
+        state.strip.setAllPixelColors(0, 0, 0);
+        state.strip.show();
+    }
     
     Serial.println(F("STARTUP"));
 }
