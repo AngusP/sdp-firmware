@@ -42,15 +42,22 @@ void setup()
 
     /* Blink green twice to visually confirm startup */
 
+    delay(120);
     state.strip.setAllPixelColors(0, 255, 0);
     state.strip.show();
-    delay(100);
+    delay(80);
     state.strip.setAllPixelColors(0, 0, 0);
     state.strip.show();
-    delay(400);
+    delay(120);
     state.strip.setAllPixelColors(0, 255, 0);
     state.strip.show();
-    delay(100);
+    delay(80);
+    state.strip.setAllPixelColors(0, 0, 0);
+    state.strip.show();
+    delay(120);
+    state.strip.setAllPixelColors(0, 255, 0);
+    state.strip.show();
+    delay(80);
     state.strip.setAllPixelColors(0, 0, 0);
     state.strip.show();
     
