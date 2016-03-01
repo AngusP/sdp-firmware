@@ -58,6 +58,7 @@ public:void setup();
     // Allows kicking and grabbing to execute without blocking
     process* kick_handler;
     process* grab_handler;
+    process* shuntkick_handler;
     KickerState kicker_state;
     GrabberState grabber_state;
     

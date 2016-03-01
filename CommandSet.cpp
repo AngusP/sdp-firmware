@@ -25,6 +25,7 @@ void CommandSet::setup()
 
     sCmd.addCommand("grab",    this->grab);         // Grab 0 or 1
     sCmd.addCommand("kick",    this->kick);         // Kick
+    sCmd.addCommand("shuntkick", this->shuntkick);  // Shuntkick
 
     sCmd.addCommand("rotate",  this->rotate);       // Rotate
 
@@ -107,20 +108,13 @@ void CommandSet::stop()
     motorAllStop();
 }
 
-void CommandSet::go()
+/*
+ * This method basically just allows us to execute the go command internally.
+ */
+void CommandSet::_go(float x_vel, float y_vel, float r_vel)
 {
-    /* holonomics and shit */
-    float x_vel = atof(sCmd.next());
-    float y_vel = atof(sCmd.next());
-    float r_vel = atof(sCmd.next());
-
     int power   = atoi(sCmd.next());
     power = power > 0 && power <= 255 ? power : 255;
-
-    Serial.println(F("A"));
-    #ifdef FW_DEBUG
-    Serial.println(F("Going"));
-    #endif
 
     float new_powers[motor_count];
 
@@ -144,7 +138,7 @@ void CommandSet::go()
         if (largest < fabs(new_powers[i]))
             largest = fabs(new_powers[i]);
     }
-    
+
     for (int i=0; i<3; i++){
         new_powers[i] = round(new_powers[i] * (1.0/largest) * (float) power);
     }
@@ -154,7 +148,21 @@ void CommandSet::go()
         state.motors[i]->disp_delta = 0;
     }
     write_powers();
-    
+}
+
+void CommandSet::go()
+{
+    /* holonomics and shit */
+    float x_vel = atof(sCmd.next());
+    float y_vel = atof(sCmd.next());
+    float r_vel = atof(sCmd.next());
+
+    Serial.println(F("A"));
+    #ifdef FW_DEBUG
+    Serial.println(F("Going"));
+    #endif
+
+    _go(x_vel, y_vel, r_vel);
 }
 
 /***  READ ROTARY ENCODERS  **************************************************************************/
@@ -215,10 +223,10 @@ void CommandSet::grab()
 
     if (direction) {
         state.grabber_state = Closing;
-        motorBackward(grabber_i2c_addr, motor_power);
+        motorBackward(grabber_port, motor_power);
     } else {
         state.grabber_state = Opening;
-        motorForward(grabber_i2c_addr, motor_power);
+        motorForward(grabber_port, motor_power);
     }
 
     processes.change(pid, 1500L);
@@ -226,6 +234,16 @@ void CommandSet::grab()
     processes.forward(pid);
 }
 
+void CommandSet::_kick()
+{
+    const pid_t pid = state.kick_handler->id;
+
+    processes.enable(pid);
+    processes.forward(pid);
+
+    state.kicker_state = Kicking;
+    digitalWrite(kicker_digital_pin, HIGH);
+}
 
 void CommandSet::kick()
 {
@@ -238,13 +256,26 @@ void CommandSet::kick()
     Serial.println(F("kicking"));
     #endif
 
-    const pid_t pid = state.kick_handler->id;
+    _kick();
+}
+
+void CommandSet::shuntkick()
+{
+    if (state.grabber_state != Open || state.kicker_state == Kicking) {
+        Serial.println(F("N - shuntkick"));
+        return;
+    }
+    Serial.println(F("A"));
+    #ifdef FW_DEBUG
+    Serial.println(F("shuntkicking"));
+    #endif
+
+    const pid_t pid = state.shuntkick_handler->id;
+
+    _go(0, 255, 0);
 
     processes.enable(pid);
     processes.forward(pid);
-
-    state.kicker_state = Kicking;
-    digitalWrite(kicker_i2c_addr, HIGH);
 }
 
 

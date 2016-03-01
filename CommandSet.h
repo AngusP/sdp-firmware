@@ -18,10 +18,13 @@ class CommandSet
         static void move();
         static void stop();
         static void go();
+        static void _go(float x_vel, float y_vel, float r_vel);
         static void speeds();
         static void pixels();
         static void grab();
         static void kick();
+        static void _kick();
+        static void shuntkick();
         static void rotate();
 
         static void proc_dump();

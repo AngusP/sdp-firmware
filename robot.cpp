@@ -122,6 +122,17 @@ process pixel = {
     .label      = pixel_l
 };
 
+const char shuntkick_handler_l[] = "Shuntkick handler";
+void shuntkick_handler_f(pid_t);
+process shuntkick_handler = {
+    .id         = 0,
+    .last_run   = 0,
+    .interval   = 500,
+    .enabled    = false,
+    .callback   = &shuntkick_handler_f,
+    .label      = shuntkick_handler_l
+};
+
 
 /*** 
      PROCESS FUNCTIONS
@@ -328,7 +339,7 @@ void exec_rotation_f(pid_t pid)
 void kick_handler_f(pid_t pid)
 {
     if (state.kicker_state == Kicking) {
-        digitalWrite(kicker_i2c_addr, LOW);
+        digitalWrite(kicker_digital_pin, LOW);
         processes.disable(pid);
         state.kicker_state = Idle;
     }
@@ -340,22 +351,31 @@ void grab_handler_f(pid_t pid)
     switch (state.grabber_state) {
 
         case Opening:
-            motorBackward(grabber_i2c_addr, 255);
+            motorBackward(grabber_port, 255);
             processes.change(pid, 700L);
             state.grabber_state = OpeningAdjusting;
             return;
         case OpeningAdjusting:
             state.grabber_state = Open;
-            motorStop(grabber_i2c_addr);
+            motorStop(grabber_port);
             break;
         case Closing:
             state.grabber_state = Closed;
-            motorStop(grabber_i2c_addr);
+            motorStop(grabber_port);
             break;
         default:
             break;
     }
     processes.disable(pid);
+}
+
+
+void shuntkick_handler_f(pid_t pid)
+{
+    write_powers(0);
+    motorAllStop();
+    processes.disable(pid);
+    command_set._kick();
 }
 
 
@@ -415,11 +435,13 @@ void Robot::register_processes()
     processes.add(&exec_rotation);
     processes.add(&kick_handler);
     processes.add(&grab_handler);
+    processes.add(&shuntkick_handler);
     processes.add(&prox_sense);
 
     state.rotation_process  = &exec_rotation;
     state.kick_handler = &kick_handler;
     state.grab_handler = &grab_handler;
+    state.shuntkick_handler = &shuntkick_handler;
 }
 
 
