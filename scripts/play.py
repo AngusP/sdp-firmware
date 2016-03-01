@@ -23,12 +23,14 @@ def main():
     if port is None:
         raise Exception("Couldn't open port " + which_port)
 
+    port.write("pixels 255 0 0\n")
+
     vector = [0,0,0]
     grab_state = False
 
     while True:
         # WASD Control for translation, QE for rotate
-        stdscr.addstr(0,0,"Hit 'x' to quit")
+        stdscr.addstr(0,0,"Hit 'x' to quit, 'p' to panic and stop")
         stdscr.refresh()
         
         key = stdscr.getch()
@@ -70,7 +72,7 @@ def main():
             # Right
             stdscr.addstr(1,0,"rotate left")
             if vector[2] == 0:
-                vector[2] = 1
+                vector[2] = 0.3
             else:
                 vector[2] = 0
 
@@ -78,7 +80,7 @@ def main():
             # Right
             stdscr.addstr(1,0,"rotate right")
             if vector[2] == 0:
-                vector[2] = -1
+                vector[2] = -0.3
             else:
                 vector[2] = 0
 
@@ -96,6 +98,10 @@ def main():
                 port.write("grab 1\n")
  
             grab_state = not grab_state
+
+        elif key == ord('p'):
+            stdscr.addstr(1,0,"stopping")
+            vector[0] = vector[1] = vector[2] = 0
             
 
         elif key == ord('x'):
@@ -105,12 +111,18 @@ def main():
             curses.endwin()
             port.write("G 0 0 0\n")
             return
-        
+
+        power = 255
+        if vector[0] == 0 and vector[1] == 0:
+            power = 140
+            
         port.write("G " + 
                    str(vector[0]) + " " + 
                    str(vector[1]) + " " + 
-                   str(vector[2]) + "\n")
+                   str(vector[2]) + " " + 
+                   str(power) + "\n")
 
+        stdscr.addstr(2,0,str(vector))
         stdscr.refresh()
         
     

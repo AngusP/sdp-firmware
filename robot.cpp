@@ -127,8 +127,8 @@ void heartbeat_f(pid_t pid)
             state.strip.setPixelColor(4, 0, 0, 0);
             state.strip.setPixelColor(5, 0, 0, 0);
         } else {
-            state.strip.setPixelColor(4, 50, 50, 50);
-            state.strip.setPixelColor(5, 50, 50, 50);
+            state.strip.setPixelColor(4, 40, 40, 30);
+            state.strip.setPixelColor(5, 40, 40, 30);
         }
         state.strip.show();
     }
@@ -361,14 +361,10 @@ uint32_t wheel(byte);
 
 void pixel_f(pid_t pid)
 {
-    pixel_persist_j == 256 ? pixel_persist_j = 0 : pixel_persist_j++;
+    pixel_persist_j == 256 ? pixel_persist_j = 0 : pixel_persist_j += 4;
     
-    for(pixel_persist_i=0; pixel_persist_i<state.strip.numPixels(); pixel_persist_i+=5) {
-        state.strip.setPixelColor(pixel_persist_i,   wheel(((pixel_persist_i/5)+pixel_persist_j) & 255));
-        state.strip.setPixelColor(pixel_persist_i+1, wheel(((pixel_persist_i/5)+pixel_persist_j) & 255));
-        state.strip.setPixelColor(pixel_persist_i+2, wheel(((pixel_persist_i/5)+pixel_persist_j) & 255));
-        state.strip.setPixelColor(pixel_persist_i+3, wheel(((pixel_persist_i/5)+pixel_persist_j) & 255));
-        state.strip.setPixelColor(pixel_persist_i+4, wheel(((pixel_persist_i/5)+pixel_persist_j) & 255));
+    for(pixel_persist_i=0; pixel_persist_i<state.strip.numPixels(); pixel_persist_i++) {
+        state.strip.setPixelColor(pixel_persist_i,   wheel((pixel_persist_i+pixel_persist_j) & 255));
     }
     state.strip.show();
 }
