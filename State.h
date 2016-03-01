@@ -28,6 +28,17 @@ typedef struct {
     unsigned long last_write;
 } motor;
 
+
+enum GrabberState
+{
+    Opening, OpeningAdjusting, Open, Closing, Closed
+};
+
+enum KickerState
+{
+    Kicking, Idle
+};
+
 class State {
 
 public:void setup();
@@ -45,8 +56,10 @@ public:void setup();
     process* rotation_process;
 
     // Allows kicking and grabbing to execute without blocking
-    process* kick_grab_handler;
-    int kg_handler_action;
+    process* kick_handler;
+    process* grab_handler;
+    KickerState kicker_state;
+    GrabberState grabber_state;
     
     Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
     

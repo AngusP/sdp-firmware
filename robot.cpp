@@ -71,17 +71,31 @@ process exec_rotation = {
 
 
 /*
-  Handle Kicking and grabbing asynchronously
+  Handle grabbing asynchronously
 */
-const char kg_handler_l[] = "kick & grab handler";
-void kg_handler_f(pid_t);
-process kg_handler = {
+const char grab_handler_l[] = "Grab handler";
+void grab_handler_f(pid_t);
+process grab_handler = {
     .id         = 0,
     .last_run   = 0,
-    .interval   = 1000,
+    .interval   = 1500,
     .enabled    = false,
-    .callback   = &kg_handler_f,
-    .label      = kg_handler_l
+    .callback   = &grab_handler_f,
+    .label      = grab_handler_l
+};
+
+/*
+  Handle kicking asynchronously
+*/
+const char kick_handler_l[] = "Kick handler";
+void kick_handler_f(pid_t);
+process kick_handler = {
+    .id         = 0,
+    .last_run   = 0,
+    .interval   = 300,
+    .enabled    = false,
+    .callback   = &kick_handler_f,
+    .label      = kick_handler_l
 };
 
 
@@ -311,38 +325,37 @@ void exec_rotation_f(pid_t pid)
     }
 }
 
-
-void kg_handler_f(pid_t pid)
+void kick_handler_f(pid_t pid)
 {
-    const int grab_port = 1;
-
-    switch(state.kg_handler_action) {
-    
-    case 1:
-        /* grab open part 1*/
-        motorBackward(grab_port, 255);
-        processes.change(pid, 700L);
-        state.kg_handler_action = 2;
-        break;
-    
-    case 2:
-        /* grab open part 2 */
-        motorStop(grab_port);
-    
-    case 3:
-        /* grab close */
-        motorStop(grab_port);
-    
-    case 0:
-        /* kicking */
-        digitalWrite(6, LOW);
-    
-    default:
-        Serial.println(F("done"));
-        state.kg_handler_action = -1;
+    if (state.kicker_state == Kicking) {
+        digitalWrite(kicker_i2c_addr, LOW);
         processes.disable(pid);
-        break;
+        state.kicker_state = Idle;
     }
+}
+
+
+void grab_handler_f(pid_t pid)
+{
+    switch (state.grabber_state) {
+
+        case Opening:
+            motorBackward(grabber_i2c_addr, 255);
+            processes.change(pid, 700L);
+            state.grabber_state = OpeningAdjusting;
+            return;
+        case OpeningAdjusting:
+            state.grabber_state = Open;
+            motorStop(grabber_i2c_addr);
+            break;
+        case Closing:
+            state.grabber_state = Closed;
+            motorStop(grabber_i2c_addr);
+            break;
+        default:
+            break;
+    }
+    processes.disable(pid);
 }
 
 
@@ -400,12 +413,13 @@ void Robot::register_processes()
     processes.add(&pixel);
     
     processes.add(&exec_rotation);
-    processes.add(&kg_handler);
-    
+    processes.add(&kick_handler);
+    processes.add(&grab_handler);
     processes.add(&prox_sense);
 
     state.rotation_process  = &exec_rotation;
-    state.kick_grab_handler = &kg_handler;
+    state.kick_handler = &kick_handler;
+    state.grab_handler = &grab_handler;
 }
 
 

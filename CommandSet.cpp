@@ -197,12 +197,9 @@ void CommandSet::pixels()
 
 void CommandSet::grab()
 {
-    int direction = atoi(sCmd.next());
-    
-    const int port          = 1;
-    const int motor_power   = 255;
+    const int direction = atoi(sCmd.next());
 
-    if (state.kg_handler_action != -1) {
+    if (!(state.grabber_state == Open || state.grabber_state == Closed)) {
         Serial.println(F("N - grab"));
         return;
     }
@@ -213,48 +210,41 @@ void CommandSet::grab()
     Serial.println(direction);
     #endif
 
-    process* handler = state.kick_grab_handler;
-    processes.enable(handler->id);
+    const pid_t pid         = state.grab_handler->id;
+    const int motor_power   = 255;
 
-    if(direction){
-        /* close */
-        state.kg_handler_action = 3;
-        motorBackward(port,  motor_power);
-        processes.change(handler->id, 1500L);
+    if (direction) {
+        state.grabber_state = Closing;
+        motorBackward(grabber_i2c_addr, motor_power);
     } else {
-        /* open */
-        state.kg_handler_action = 1;
-        motorForward(port, motor_power);
-        processes.change(handler->id, 1500L);
+        state.grabber_state = Opening;
+        motorForward(grabber_i2c_addr, motor_power);
     }
 
-    processes.enable(handler->id);
-    processes.forward(handler->id);
+    processes.change(pid, 1500L);
+    processes.enable(pid);
+    processes.forward(pid);
 }
 
 
 void CommandSet::kick()
 {
-    if (state.kg_handler_action != -1) {
+    if (state.grabber_state != Open || state.kicker_state == Kicking) {
         Serial.println(F("N - kick"));
         return;
     }
-
     Serial.println(F("A"));
     #ifdef FW_DEBUG
     Serial.println(F("kicking"));
     #endif
 
-    digitalWrite(6, HIGH);
-    
-    process* handler = state.kick_grab_handler;
-    state.kg_handler_action = 0;
+    const pid_t pid = state.kick_handler->id;
 
-    /* Activate handler and set interval */
-    processes.enable(handler->id);
-    processes.change(handler->id, 300L);
-    processes.forward(handler->id);
-    
+    processes.enable(pid);
+    processes.forward(pid);
+
+    state.kicker_state = Kicking;
+    digitalWrite(kicker_i2c_addr, HIGH);
 }
 
 
