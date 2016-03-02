@@ -314,6 +314,11 @@ void CommandSet::proc_toggle()
 {
     pid_t pid = (pid_t) atoi(sCmd.next());
 
+    if (pid == NULL) {
+        Serial.println("N - ptog");
+        return;
+    }
+    
     process* proc = processes.get_by_id(pid);
 
     if (proc == NULL) {

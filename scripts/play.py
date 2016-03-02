@@ -23,8 +23,9 @@ def main():
     if port is None:
         raise Exception("Couldn't open port " + which_port)
 
-    port.write("pixels 255 0 0\n")
-
+    #port.write("pixels 255 0 0\n")
+    port.write("ptog 3\n")
+    
     vector = [0,0,0]
     grab_state = False
 
