@@ -21,7 +21,7 @@ void heartbeat_f(pid_t);
 process heartbeat = {
     .id         = 0,
     .last_run   = 0,
-    .interval   = 999,
+    .interval   = 1000,
     .enabled    = true,
     .callback   = &heartbeat_f,
     .label      = heartbeat_l
@@ -98,25 +98,12 @@ process kick_handler = {
     .label      = kick_handler_l
 };
 
-
-const char prox_sense_l[] = "Read proximity sensor";
-void prox_sense_f(pid_t);
-process prox_sense = {
-    .id         = 0,
-    .last_run   = 0,
-    .interval   = 1000,
-    .enabled    = false,
-    .callback   = &prox_sense_f,
-    .label      = prox_sense_l
-};
-
-
 const char pixel_l[] = "LED pixels";
 void pixel_f(pid_t);
 process pixel = {
     .id         = 0,
     .last_run   = 0,
-    .interval   = 100,
+    .interval   = 300,
     .enabled    = false,
     .callback   = &pixel_f,
     .label      = pixel_l
@@ -152,8 +139,8 @@ void heartbeat_f(pid_t pid)
             state.strip.setPixelColor(4, 0, 0, 0);
             state.strip.setPixelColor(5, 0, 0, 0);
         } else {
-            state.strip.setPixelColor(4, 40, 40, 30);
-            state.strip.setPixelColor(5, 40, 40, 30);
+            state.strip.setPixelColor(4, 50, 50, 30);
+            state.strip.setPixelColor(5, 50, 50, 30);
         }
         state.strip.show();
     }
@@ -207,7 +194,7 @@ void check_motors_f(pid_t pid)
 {
     /* Gradient Descent Motor Error correction */
 
-    const double learn_rate = 0.05;
+    const double learn_rate = 0.1;
 
     motor* mtr;
     int i;
@@ -373,15 +360,8 @@ void grab_handler_f(pid_t pid)
 void shuntkick_handler_f(pid_t pid)
 {
     write_powers(0);
-    motorAllStop();
     processes.disable(pid);
     command_set._kick();
-}
-
-
-void prox_sense_f(pid_t pid)
-{
-    
 }
 
 
@@ -389,16 +369,39 @@ void prox_sense_f(pid_t pid)
    Because pretty
 **/
 
-uint16_t pixel_persist_i, pixel_persist_j; // sorry
+uint16_t pixel_state = 0; // sorry
 uint32_t wheel(byte);
 
 void pixel_f(pid_t pid)
 {
-    pixel_persist_j == 256 ? pixel_persist_j = 0 : pixel_persist_j += 4;
-    
-    for(pixel_persist_i=0; pixel_persist_i<state.strip.numPixels(); pixel_persist_i++) {
-        state.strip.setPixelColor(pixel_persist_i,   wheel((pixel_persist_i+pixel_persist_j) & 255));
+    int i;
+
+    if (pixel_state == 0 or pixel_state == 2){
+        for (i=0; i<(state.strip.numPixels()/2); i++) {
+            state.strip.setPixelColor(i, 0, 255, 0);
+        }
+        
+        i = (state.strip.numPixels()/2);
+        
+        for (; i<state.strip.numPixels(); i++) {
+            state.strip.setPixelColor(i, 255, 0, 0);
+        }
+
+        processes.change(pid, 100L);
+        pixel_state++;
+        
+    } else {
+        state.strip.setAllPixelColors(0,0,0);
+        
+        if (pixel_state >= 3){
+            processes.change(pid, 500L);
+            pixel_state = 0;
+        } else {
+            processes.change(pid, 100L);
+            pixel_state++;
+        }
     }
+
     state.strip.show();
 }
 
@@ -436,7 +439,7 @@ void Robot::register_processes()
     processes.add(&kick_handler);
     processes.add(&grab_handler);
     processes.add(&shuntkick_handler);
-    processes.add(&prox_sense);
+    //processes.add(&prox_sense);
 
     state.rotation_process  = &exec_rotation;
     state.kick_handler = &kick_handler;
