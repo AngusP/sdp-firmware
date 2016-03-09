@@ -23,8 +23,8 @@ def main():
     if port is None:
         raise Exception("Couldn't open port " + which_port)
 
-    #port.write("pixels 255 0 0\n")
-    port.write("ptog 3\n")
+    #port.write("pixels 255 255 255\n")
+    #port.write("ptog 3\n")
 
     vector = [0,0,0]
     grab_state = False
@@ -85,6 +85,11 @@ def main():
             else:
                 vector[2] = 0
 
+        elif key == ord('l'):
+            # Lights
+            stdscr.addstr(1,0,"lights toggle")
+            port.write("ptog 3\n")
+
         elif key == ord(' '):
             # Kicking
             stdscr.addstr(1,0,"kick")
@@ -111,7 +116,8 @@ def main():
             curses.echo()
             curses.endwin()
             port.write("G 0 0 0\n")
-            port.write("ptog 3\n")
+            port.write("pixels 0 0 0\n")
+            #port.write("ptog 3\n")
             return
 
         power = 255
