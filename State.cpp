@@ -53,7 +53,7 @@ void State::setup()
     motors[2] = &motor_2;
 
     kicker_state = Idle;
-    grabber_state = Open;
+    grabber_state = Closed;
     status_led = LOW;
     pinMode(status_led_pin, OUTPUT);
     digitalWrite(status_led_pin, status_led);

@@ -29,19 +29,19 @@ typedef struct {
 } motor;
 
 
-enum GrabberState
-{
-    Opening, OpeningAdjusting, Open, Closing, Closed
+enum GrabberState {
+    Opening, Holding, Open, Closing, Squeezing, Closed
 };
 
-enum KickerState
-{
+enum KickerState {
     Kicking, Idle
 };
 
 class State {
 
-public:void setup();
+public:
+
+    void setup();
     
     int battery;
     uint8_t status_led;
@@ -61,6 +61,8 @@ public:void setup();
     process* shuntkick_handler;
     KickerState kicker_state;
     GrabberState grabber_state;
+
+    long grabber_diff;
     
     Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
     
@@ -71,3 +73,4 @@ public:void setup();
 extern State state;
 
 #endif //FIRMWARE_STATE_H
+

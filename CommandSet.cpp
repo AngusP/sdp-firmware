@@ -219,17 +219,21 @@ void CommandSet::grab()
     #endif
 
     const pid_t pid         = state.grab_handler->id;
-    const int motor_power   = 255;
+    const int motor_power   = 200;
 
+    /* If we're open, doing that again will bugger the vision plate */
     if (direction) {
         state.grabber_state = Closing;
-        motorBackward(grabber_port, motor_power);
-    } else {
-        state.grabber_state = Opening;
         motorForward(grabber_port, motor_power);
+        processes.change(pid, 300L);
+    } else if (state.grabber_state != Open) {
+        state.grabber_state = Opening;
+        motorBackward(grabber_port, motor_power);
+        processes.change(pid, 280L);
+    } else {
+        return;
     }
 
-    processes.change(pid, 1500L);
     processes.enable(pid);
     processes.forward(pid);
 }

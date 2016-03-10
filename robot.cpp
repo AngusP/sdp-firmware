@@ -151,8 +151,9 @@ void update_motors_f(pid_t pid)
 {
     /*
       Poll encoders and update speed
+      Number of drive motors (motor_count) +1 for grabber
     */
-    Wire.requestFrom(encoder_i2c_addr, motor_count);
+    Wire.requestFrom(encoder_i2c_addr, motor_count+1);
 
     for (int i = 0; i < motor_count; i++) {
         
@@ -187,6 +188,14 @@ void update_motors_f(pid_t pid)
         state.motors[i]->delta_speed =
             state.motors[i]->speed - old_speed;
     }
+
+    
+    /*
+      Update grabber metrics
+    */
+    byte delta = (byte) Wire.read();
+    // TODO: Correct for over/underflow as above
+    state.grabber_diff += delta;
 }
 
 
@@ -338,18 +347,33 @@ void grab_handler_f(pid_t pid)
     switch (state.grabber_state) {
 
         case Opening:
-            motorBackward(grabber_port, 255);
-            processes.change(pid, 700L);
-            state.grabber_state = OpeningAdjusting;
+            state.grabber_state = Holding;
+            motorBrake(grabber_port, 255);
             return;
-        case OpeningAdjusting:
+            
+        case Holding:
             state.grabber_state = Open;
-            motorStop(grabber_port);
+            motorBackward(grabber_port, 40);
+            return;
+
+        case Open:
+            motorBrake(grabber_port, 255);
             break;
+            
         case Closing:
+            state.grabber_state = Squeezing;
+            motorForward(grabber_port, 100);
+            return;
+
+        case Squeezing:
             state.grabber_state = Closed;
-            motorStop(grabber_port);
+            motorForward(grabber_port, 100);
+            return;
+
+        case Closed:
+            motorBrake(grabber_port, 255);
             break;
+            
         default:
             break;
     }
