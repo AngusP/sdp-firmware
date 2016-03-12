@@ -32,7 +32,7 @@ def main():
         print " ",
         print y
         
-        port.write("G " + str(round(y,4)) + " " + str(round(x,4)) + " 0.4\n")
+        port.write("G " + str(round(x,4)) + " " + str(round(y,4)) + " -0.39\n")
 
         t += magic_resolution
 
