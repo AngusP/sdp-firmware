@@ -357,7 +357,7 @@ void grab_handler_f(pid_t pid)
             return;
 
         case Open:
-            motorBrake(grabber_port, 255);
+            //motorBrake(grabber_port, 255);
             break;
             
         case Closing:

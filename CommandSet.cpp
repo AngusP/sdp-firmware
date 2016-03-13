@@ -207,7 +207,7 @@ void CommandSet::grab()
 {
     const int direction = atoi(sCmd.next());
 
-    if (!(state.grabber_state == Open || state.grabber_state == Closed)) {
+    if (state.grabber_state != Open && state.grabber_state != Closed) {
         Serial.println(F("N - grab"));
         return;
     }
