@@ -63,3 +63,5 @@ Which has the partial derivative with respect to $\hat{r_i}$
 
 This component is cruicial to the accuracy and repeatability of motion for the robot.
 
+As far as units go, all vectors are converted to unit vectors, but most are provided initially with dimensions in the range ${\{-255,255\}}$ with the exception of the realised velocity vector, which is simply the number of ticks the rotary encoders have passed in the time interval since last checked. The conversion to unit vectors is in part to eliminate problems ith unit compatability, and part because the single-precision only floating point unit on the Arduino quickly seccumbs to NaNs if dealing with larger numbers. 
+
