@@ -23,11 +23,11 @@ This is the main file which contains the \texttt{void setup()} and \texttt{void 
 
 \subsection{Architecture}
 
-The firmware we're currently running has changed significantly from the source we started with (SDP Group 13 2015). While the concepts haven't changed much, the implementation is significantly different, and the majority of changes have been made to generalise the control structures and add powerful flexibility to the firmware's capabilities.
+The firmware we're currently running has changed significantly from the source we started with (SDP Group 13 2015). Some useful concepts have survived, but the implementation is significantly different, and the majority of changes have been made to generalise the control structures and add powerful flexibility to the firmware's capabilities.
 
-The notion of `Processes' has been introduced, allowing a structure to define a task that must be run at a regular interval. Process structures carry around all their own scheduling information, and a pointer to the function that needs to be run; This information is mutable, allowing state machine behaviour with variable yet defined intervals between transitions to be employed. The firmware as it stands uses Processes to poll the rotary encoders on the drive motors, and calculate the instantaneous speeds of each wheel. A Process was also used to guarantee accurate timing for the Milestone 1 communications task.
+The notion of `Processes' has been introduced, allowing a structure to define a task that must be run at a defined time interval. Process structures carry around all their own scheduling information, and a pointer to the function that needs to be run; This information is mutable, allowing state machine behaviour with variable yet defined intervals between transitions to be employed. The firmware as it stands uses Processes to poll the rotary encoders on the drive motors, and calculate the instantaneous speeds of each wheel. A Process was also used to guarantee accurate timing for the Milestone 1 communications task. This architecture adds minimal overhead but verifiably gives an abstracted way of serially multitasking, as opposed to a very large loop function that risks control blocking and lock-ups.
 
-Similarly, the parsing and execution of commands received over serial is handled by the `CommandSet' and `SerialCommand' classes, with function pointers being registered in association with the keyword string at setup time. These abstractions make it easy to add processes or new commands, and isolate potentially buggy functions from each-other (though any blocking IO operations will still break functionality)
+Similarly, the parsing and execution of commands received over serial is handled by the `CommandSet' and `SerialCommand' classes, with function pointers being registered in association with the keyword string at setup time. Commands received over Serial are interpreted and executed immediately, giving very little lag between a command being sent and a command being enacted by the bot. These abstractions make it easy to add processes or new commands, and isolate potentially buggy functions from each-other (though any blocking IO operations will still break functionality). It is also possible to enable and disable processes during runtime, if it is desired. 
 
 \subsection{Command Set}
 
@@ -98,7 +98,7 @@ All commands should be sent with a trailing newline, \verb|\n|
 
 
 \item[Rotating]
-  Rotates at \texttt{d1} power (-255 to 255 inclusive) until the encoders have gone through \texttt{d2} stops (0+) on average. This can be used to get fairly precice rotation but stops isn't degrees (though it's related) and depends somewhat on battery voltage.
+  Rotates at \texttt{d1} power (-255 to 255 inclusive) until the encoders have gone through \texttt{d2} stops (0+) on average. This can be used to get fairly precise rotation but stops isn't degrees (though it's related) and depends somewhat on battery voltage.
 
   send: \verb|rotate %d1 %d2|
 
