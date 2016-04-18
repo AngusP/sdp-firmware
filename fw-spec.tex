@@ -4,30 +4,13 @@
 
 \section{Firmware}
 
-\subsection{Important Source Files}
-
-\paragraph{\texttt{firmware.ino}}
-This is the main file which contains the \texttt{void setup()} and \texttt{void loop()} functions. The former only initializes the serial port, calls the \texttt{setup()} methods of other pivotal objects, and outputs \texttt{STARTUP} to indicate that the robot is ready to receive commands. On the other hand, the \texttt{loop} function handles asynchronous logic by checking the serial port for any new commands and synchronous logic by running processes (more on these below).
-
-\paragraph{\texttt{SerialCommand.cpp}} This file provides a simple library whose purpose is to map command strings to callbacks which it then executes based on the input it reads from the serial port.
-
-\paragraph{\texttt{CommandSet.cpp}} This object initializes \texttt{SerialCommand} and associates each of the robot's commands with one of its methods, which then perform the necessary steps to fulfil it.
-
-\paragraph{\texttt{Processes.cpp}} The object in this file manages processes, which are essentially tasks to be completed periodically but not necessarily as often as the \texttt{loop()} function is called. 
-
-\paragraph{\texttt{State.cpp}} This is a very simple object which essentially only serves as a central storage space for various values which may change during runtime. Most notably, it contains the current information on each of the holonomic motors such as power or total distance travelled, and the state of a data transfer.
-
-\paragraph{\texttt{robot.cpp}} Contains the code that is run clock-synchronously by Processes -- There is a process that is responsible for toggling an LED every second in order to indicate the robot is \textit{alive}. Other processes include one that polls the encoders on each motor to monitor how far they travelled and another one that potentially makes any adjustments necessary to account for errors or motor differences based on this information.
-
-\paragraph{\texttt{SDPArduino.cpp}} This is a library based on the last year's winner team's firmware which declares several low-level utility functions providing convenient interface for bidirectional motor movement and halting.
-
 \subsection{Architecture}
 
 The firmware we're currently running has changed significantly from the source we started with (SDP Group 13 2015). Some useful concepts have survived, but the implementation is significantly different, and the majority of changes have been made to generalise the control structures and add powerful flexibility to the firmware's capabilities.
 
-The notion of `Processes' has been introduced, allowing a structure to define a task that must be run at a defined time interval. Process structures carry around all their own scheduling information, and a pointer to the function that needs to be run; This information is mutable, allowing state machine behaviour with variable yet defined intervals between transitions to be employed. The firmware as it stands uses Processes to poll the rotary encoders on the drive motors, and calculate the instantaneous speeds of each wheel. A Process was also used to guarantee accurate timing for the Milestone 1 communications task. This architecture adds minimal overhead but verifiably gives an abstracted way of serially multitasking, as opposed to a very large loop function that risks control blocking and lock-ups.
+The notion of `Processes' has been introduced, allowing a structure to define a task that must be run at a defined time interval. Process structures carry around all their own scheduling information, and a pointer to the function that needs to be run; This information is mutable, allowing temporal state machine behaviour with time-triggered transitions to be employed. The firmware as it stands uses Processes to poll the rotary encoders on the drive motors, and calculate the instantaneous speeds of each wheel. A Process was also used to guarantee accurate timing for the Milestone 1 communications task. This architecture adds minimal overhead but verifiably gives an abstracted way of serially multitasking, as opposed to a very large loop function that risks control blocking and lock-ups.
 
-Similarly, the parsing and execution of commands received over serial is handled by the `CommandSet' and `SerialCommand' classes, with function pointers being registered in association with the keyword string at setup time. Commands received over Serial are interpreted and executed immediately, giving very little lag between a command being sent and a command being enacted by the bot. These abstractions make it easy to add processes or new commands, and isolate potentially buggy functions from each-other (though any blocking IO operations will still break functionality). It is also possible to enable and disable processes during runtime, if it is desired. 
+Similarly, the parsing and execution of commands received over serial is handled by the `CommandSet' class and `SerialCommand' subclass, with function pointers being registered in association with the keyword string at setup time. Commands received over Serial are interpreted and executed immediately in an interrupt-driven model, giving very little lag between a command being sent and a command being enacted by the bot. These abstractions make it easy to add processes or new commands, and isolate potentially buggy functions from each-other (though any blocking IO operations will still break functionality). It is also possible to enable and disable processes during runtime, if it is desired. 
 
 \subsection{Motion Execution and Correction}
 
@@ -36,7 +19,7 @@ A process (as defined above) is used to read the changes in rotary encoder posit
 The error vector $\hat{e}$ given a desired velocity vector $\hat{v}$ and realised velocity vector $\hat{r}$ is defined:
 
 \begin{equation}
-  \hat{e_i} = k \cdot \frac{\hat{d_i}}{||\hat{d}||}
+  \hat{e_i} = k \cdot (\frac{\hat{d_i}}{||\hat{d}||} - \frac{\hat{r_i}}{||\hat{r}||})
 \end{equation}
 
 The new powers we need to apply to the motors to reduce the error, $\hat{c'}$ with respect to the previous $\hat{c}$ and error $\hat{e}$ is
@@ -61,7 +44,7 @@ Which has the partial derivative with respect to $\hat{r_i}$
   \frac{\hat{r_i} - \hat{d_i}}{||\hat{d}-\hat{r}||}
 \end{equation}
 
-This component is cruicial to the accuracy and repeatability of motion for the robot.
+This component is crucial to the accuracy and repeatability of motion for the robot.
 
-As far as units go, all vectors are converted to unit vectors, but most are provided initially with dimensions in the range ${\{-255,255\}}$ with the exception of the realised velocity vector, which is simply the number of ticks the rotary encoders have passed in the time interval since last checked. The conversion to unit vectors is in part to eliminate problems ith unit compatability, and part because the single-precision only floating point unit on the Arduino quickly seccumbs to NaNs if dealing with larger numbers. 
+As far as units go, all vectors are converted to unit vectors, but most are provided initially with dimensions in the range ${\{-255,255\}}$ with the exception of the realised velocity vector, which is simply the number of ticks the rotary encoders have passed in the time interval since last checked. The conversion to unit vectors is in part to eliminate problems with unit compatibility, and part because the single-precision only floating point unit on the Arduino quickly succumbs to NaNs if dealing with larger numbers. 
 
