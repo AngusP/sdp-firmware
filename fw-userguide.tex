@@ -6,22 +6,21 @@
 
 \subsection{Compiling \& Uploading}
 
-All the necessary source files to compile and run the firmware on an Arduino Uno or compatible microcontroller are in the root directory of the firmware Git repository. The code has been tested on both an Arduino Uno and a Xino RF, both of which are designed around the Atmel AT328P microcontroller. The code is not guaranteed to work on any other boards though it should be fine in most cases.
+All the necessary source files to compile and run the firmware on an Arduino Uno or compatible microcontroller are in the root directory of the firmware Git repository. The code has been tested on both an Arduino Uno and a Xino RF, both of which are designed around the Atmel ATMega 32u4 microcontroller. The code is not guaranteed to work on any other boards though it should be fine in most cases.
 
 To compile, open \texttt{firmware.ino} in the Arduino IDE. Note that the IDE must be version 1.6.0 or greater; The version currently bundled with DICE is too old to support some of the C++ 11 features used in this code. We will also assume that you are using a Linux based system. Also note that the IDE's automagic linker is fussy, and will want \texttt{firmware.ino}'s parent directory to also be called \texttt{firmware}. The most recent release of the Arduino IDE is available from \href{https://arduino.cc}{https://arduino.cc}.
 
 All dependencies are either included with the repository or come bundled with the Arduino IDE.
 
-Ensure the Arduino you wish to program is plugged in, it's power light is on (if it has one) and the IDE can detect it - if it can, it'll be available under Tools $>$ Serial Port $>$ /dev/ttyACM[n]. Arduino's website and forums have good documentation for dealing with drivers and connection issues. Make sure that the correct board is selected - `Arduino/Genuino Uno' works for both the Uno and Xino. To upload, hit the upload button (the arrow in the blue toolbar) which will proceed to flash the board. See \href{https://www.arduino.cc/en/Guide/Troubleshooting}{https://arduino.cc} for troubleshooting uploads.
+Ensure the Arduino you wish to program is plugged in, it's power light is on (if it has one) and the IDE can detect it - if it can, it'll be available under Tools $\rightarrow$ Serial Port $\rightarrow$ /dev/ttyACM[n]. Arduino's website and forums have good documentation for dealing with drivers and connection issues. Make sure that the correct board is selected - `Arduino/Genuino Uno' works for both the Uno and Xino. To upload, hit the upload button (the arrow in the blue toolbar) which will proceed to flash the board. See \href{https://www.arduino.cc/en/Guide/Troubleshooting}{https://arduino.cc} for troubleshooting uploads.
 
 The only visible confirmation that the firmware is running correctly is that the status LED on the board should be blinking on and off every second. The firmware will begin running as soon as the board is powered on, and print \verb|STARTUP| over the serial port as soon as it is ready to receive a command.
 
 \subsection{Serial Port Setup}
 
-Some of the specifics will be different depending on which Arduino board is used; This guide assumes the use of the Xino RF. Using Serial over USB is pretty straightforward so is useful as a sanity check if the RF is giving you trouble.
+The firmware communicates at \texttt{115200} Baud, meaning that the serial terminal you're using, the RF module on the Xino, and the RF USB modem stick must all be using this Baud rate, otherwise you will receive garbage data. Details on how to configure the RF modules are left to Xino's own user guide, to save repeating information.
 
-The firmware communicates at \texttt{115200} Baud, meaning that the serial terminal you're using, the RF module on the Xino, and the RF USB modem stick must all be using this Baud rate, otherwise you will only receive garbage data. Details on how to configure the RF modules are left to Xino's own user guide, to save repeating information and perhaps making a mistake in doing so.
-
-Unfortunately a decent serial terminal is hard to come by on Linux; We need one with a `line mode'. Minicom can be coerced into doing this by sending an ASCII text file to the device, but this is less than ideal. I find that \href{http://freeware.the-meiers.org/}{`CoolTerm'} is the most capable free tool available, though PuTTY also has a `Line Editing Mode' that is perfectly useable in conjunction with `Local Echo'. The Arduino IDE's built in Serial Monitor is simple but will also work. Make sure it is communicating at the correct Baud rate, and is set to send a `newline' after the string is sent to the Arduino.
+You'll need a Serial Console with a `line mode'. \href{http://freeware.the-meiers.org/}{`CoolTerm'} is a capable free tool, though PuTTY also has a `Line Editing Mode' that is perfectly useable in conjunction with `Local Echo'. The Arduino IDE's built in Serial Monitor is simple but will also work. Make sure it is communicating at the correct Baud rate, and is set to send a `newline' after the string is sent to the Arduino.
 
 The command set that the robot currently recognises is documented in the Technical Specification. No further setup is required on the firmware side.
+
