@@ -19,13 +19,13 @@ A process (as defined above) is used to read the changes in rotary encoder posit
 The error vector $\hat{e}$ given a desired velocity vector $\hat{v}$ and realised velocity vector $\hat{r}$ is defined:
 
 \begin{equation}
-  \hat{e_i} = k \cdot (\frac{\hat{d_i}}{||\hat{d}||} - \frac{\hat{r_i}}{||\hat{r}||})
+  \hat{e}_i = k \cdot \left(\frac{\hat{d}_i}{\Vert\hat{d}\Vert} - \frac{\hat{r}_i}{\Vert\hat{r}\Vert}\right)
 \end{equation}
 
 The new powers we need to apply to the motors to reduce the error, $\hat{c'}$ with respect to the previous $\hat{c}$ and error $\hat{e}$ is
 
 \begin{equation}
-  \hat{c_i}' = \frac{ \hat{c_i} }{||\hat{c}||} + \frac{ \hat{e_i} }{||\hat{e}||}
+  \hat{c}_i' = \frac{ \hat{c}_i }{\Vert\hat{c}\Vert} + \frac{ \hat{e}_i }{\Vert\hat{e}\Vert}
 \end{equation}
 
 The error function we wish to minimise is $E$
@@ -34,17 +34,16 @@ The error function we wish to minimise is $E$
   E_{(\hat{d},\hat{r})} = \sqrt{\sum_{j=1}^{n} (\hat{d_j} - \hat{r_j})^2}
 \end{equation}
 
-Which has the partial derivative with respect to $\hat{r_i}$
+Which has the partial derivative with respect to $\hat{r}_i$
 
 \begin{equation}
-  \frac{\partial E}{\partial \hat{r_i}}
+  \frac{\partial E}{\partial \hat{r}_i}
   =
-  \frac{\hat{r_i} - \hat{d_i}}{\sqrt{\sum_{j=1}^{n} (\hat{d_j} - \hat{r_j})^2}}
+  \frac{\hat{r}_i - \hat{d}_i}{\sqrt{\sum_{j=1}^{n} (\hat{d_j} - \hat{r_j})^2}}
   =
-  \frac{\hat{r_i} - \hat{d_i}}{||\hat{d}-\hat{r}||}
+  \frac{\hat{r}_i - \hat{d}_i}{\Vert\hat{d}-\hat{r}\Vert}
 \end{equation}
 
 This component is crucial to the accuracy and repeatability of motion for the robot.
 
-As far as units go, all vectors are converted to unit vectors, but most are provided initially with dimensions in the range ${\{-255,255\}}$ with the exception of the realised velocity vector, which is simply the number of ticks the rotary encoders have passed in the time interval since last checked. The conversion to unit vectors is in part to eliminate problems with unit compatibility, and part because the single-precision only floating point unit on the Arduino quickly succumbs to NaNs if dealing with larger numbers. 
-
+As far as units go, all vectors are converted to unit vectors, but most are provided initially with dimensions in the range $[-255,255]$ with the exception of the realised velocity vector, which is simply the number of ticks the rotary encoders have passed in the time interval since last checked. The conversion to unit vectors is in part to eliminate problems with unit compatibility, and part because the single-precision only floating point unit on the Arduino quickly succumbs to NaNs if dealing with larger numbers.
